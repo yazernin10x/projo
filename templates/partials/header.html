@@ -1,0 +1,14 @@
+
+<header>
+    <nav>
+        <a href="{% url 'index' %}">Accueil</a>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'accounts:profile' %}">Profile</a>
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'accounts:register' %}">Register</a>
+            <a href="{% url 'accounts:login' %}">Login</a>
+        {% endif %}
+    </nav>
+</header>
