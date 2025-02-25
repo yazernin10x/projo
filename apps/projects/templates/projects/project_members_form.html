@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <!-- En-tête -->
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="card-title text-2xl">Ajouter des membres</h1>
+                    <div class="badge badge-primary">{{ project.title }}</div>
+                </div>
+
+                <!-- Formulaire -->         
+                {% if project_members_formset %}
+                    <form method="post" id="members-form">
+                        {% csrf_token %}
+                        {{ project_members_formset.management_form }}
+                        {{ project_members_formset.non_form_errors }}
+                        {{ project_members_formset.errors }}
+                        <!-- Conteneur des formulaires -->
+                        <div id="form-container" class="space-y-4">
+                            {% for form in project_members_formset %}
+                                <div class="form-item card bg-base-200">
+                                    <div class="card-body">
+                                        <!-- Numéro du membre -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="badge member-number">Membre #{{ forloop.counter }}</span>
+                                        </div>
+
+                                        <!-- Champs du formulaire -->
+                                        <div class="flex gap-4 items-end">
+                                            {% for field in form.visible_fields %}
+                                                <div class="form-control flex-1">
+                                                    <label class="label" for="{{ field.id_for_label }}">
+                                                        <span class="label-text">{{ field.label }}</span>
+                                                    </label>
+                                                    {{ field }}
+                                                    {% if field.errors %}
+                                                        <div class="text-error text-sm mt-1">
+                                                            {{ field.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+
+                                            
+                                            <div class="form-control">
+                                                <a class="btn btn-danger bg-red-600 text-white remove-form">Supprimer</a>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="flex flex-col gap-4 mt-6">
+                            <button type="button" id="add-form" class="btn btn-secondary">                            
+                                Ajouter un autre membre
+                            </button>
+                            
+                            <div class="flex justify-end gap-2">
+                                <a href="{% url 'projects:detail' project.id %}" class="btn">
+                                    Annuler
+                                </a>
+                                <button type="submit" class="btn btn-primary"> Ajouter </button>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+
+            <div id="empty-project-members-formset" style="display:none;">
+                <div class="form-item card bg-base-200 new-form">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center">
+                            <span class="badge member-number">Membre #number</span>
+                        </div>
+
+                        <!-- Champs du formulaire -->
+                        <div class="flex gap-4 items-end">
+                            {% for field in project_members_formset.empty_form %}
+                                {% if "user" in field.label|lower or "role" in field.label|lower or "delete" in field.label|lower %}
+                                    <div class="form-control flex-1">
+                                        <label class="label" for="{{ field.id_for_label }}">
+                                            <span class="label-text">{{ field.label }}</span>
+                                        </label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <div class="text-error text-sm mt-1">{{ field.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            <div class="form-control">
+                                <a class="btn btn-danger bg-red-600 text-white remove-form">Supprimer</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let addFormButton = document.getElementById('add-form');
+    let formContainer = document.getElementById('form-container');
+    
+
+    // Masquer les champs de suppression
+    function hideDeleteFields() {
+        document.querySelectorAll('[id$="-DELETE"]').forEach(function(element) {
+            element.closest('.form-control').style.display = 'none';
+        });
+    }
+    
+    hideDeleteFields();
+
+    // Ajoute un nouveau formulaire
+    addFormButton.addEventListener('click', function() {
+        let totalForms = document.getElementById('id_project-members-TOTAL_FORMS');
+        hideDeleteFields();
+        let emptyFormset = document.getElementById('empty-project-members-formset');
+        emptyFormset.querySelector('.member-number').textContent = `Membre # ${totalForms.value}`;
+        applyDaisyUIStyles(emptyFormset);
+
+        let newFormHtml = emptyFormset.innerHTML.replace(/__prefix__/g, totalForms.value);
+        formContainer.insertAdjacentHTML('beforeend', newFormHtml);
+        totalForms.value++;
+    });
+
+    // Supprime un formulaire
+    formContainer.addEventListener('click', function(e) {
+        let totalForms = document.getElementById('id_project-members-TOTAL_FORMS');
+        // Supprime un formulaire
+        if (e.target.classList.contains("remove-form")) {
+            e.preventDefault();
+            let formItem = e.target.closest('.form-item');
+            
+            // Si le formulaire a la classe n'est pas new-form, on masque le formulaire et on coche le checkbox DELETE
+            if (!formItem.classList.contains('new-form')) {
+                let deleteCheckbox = formItem.querySelector('[id$="-DELETE"]');
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = true;
+                }
+                formItem.style.display = 'none';
+            } else {
+                formItem.remove();
+                totalForms.value--;
+            }
+
+            // Met à jour les numéros des formulaires
+            formContainer.querySelectorAll(".form-item").forEach((formItem, index) => {
+                formItem.querySelector(".member-number").textContent = `Membre #${index + 1}`;
+
+                formItem.querySelectorAll(".form-control").forEach((formControl) => {
+                    let label = formControl.querySelector("label")
+                    if (label) {
+                        let forValue = label.getAttribute("for").split("-");
+                        label.setAttribute("for", `${forValue[0]}-${index}-${forValue.pop()}`);
+                    }
+
+                    let select = formControl.querySelector("select")
+                    if (select) {
+                        let selectIdValue = select.getAttribute("id").split("-");
+                        let selectNameValue = select.getAttribute("name").split("-");
+                        select.setAttribute("id", `${selectIdValue[0]}-${index}-${selectIdValue.pop()}`);
+                        select.setAttribute("name", `${selectNameValue[0]}-${index}-${selectNameValue.pop()}`);
+                    }
+
+                    let input = formControl.querySelector("input")
+                    if (input) {
+                        let inputIdValue = input.getAttribute("id").split("-");
+                        let inputNameValue = input.getAttribute("name").split("-");
+                        input.setAttribute("id", `${inputIdValue[0]}-${index}-${inputIdValue.pop()}`);
+                        input.setAttribute("name", `${inputNameValue[0]}-${index}-${inputNameValue.pop()}`);
+                    }
+                });
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

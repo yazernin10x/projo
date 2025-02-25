@@ -1,0 +1,88 @@
+<!-- Liste des projets -->
+{% if projects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for project in projects %}
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 cursor-pointer" 
+                 onclick="window.location.href='{% url 'projects:detail' project.id %}'">
+                <div class="card-body p-4 hover:bg-primary/10 transition-colors duration-300">
+                    <!-- En-tête du projet avec actions -->
+                    <div class="flex justify-between items-start">
+                        <!-- Titre et statut -->
+                        <div class="flex items-center gap-2">
+                            <h3 class="card-title text-lg font-bold text-base-content hover:text-accent-focus transition-colors duration-300">
+                                {{ project.title|truncatechars:20 }}
+                            </h3>
+                        </div>
+                        
+                        <!-- Actions -->
+                        {% if is_owner %}
+                        <div class="flex gap-2">
+                            <a href="{% url 'projects:update' project.id %}" 
+                               class="btn btn-ghost btn-sm btn-circle text-warning" 
+                               title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            
+                            <!-- Bouton pour ouvrir la modal -->
+                            <button onclick="openModal({{ project.pk }}, 'project', 'delete')" 
+                                    class="btn btn-ghost btn-sm btn-circle text-error"
+                                    title="Supprimer">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Informations compactes avec labels -->
+                    <div class="flex flex-wrap gap-3 mt-2 text-xs">
+                        {% if project.created_at %}
+                        <div class="flex items-center gap-2 text-base-content opacity-90">
+                            <i class="fas fa-clock text-info"></i>
+                            <span>Créé: {{ project.created_at|date:"d/m/Y" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if project.deadline %}
+                        <div class="flex items-center gap-2 text-base-content opacity-90">
+                            <i class="fas fa-calendar-alt text-warning"></i>
+                            <span>Fin: {{ project.deadline|date:"d/m/Y" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if project.members.count > 0 %}
+                        <div class="flex items-center gap-2 text-base-content opacity-90">
+                            <i class="fas fa-users text-info"></i>
+                            <span>{{ project.members.count }} membre{{ project.members.count|pluralize:"s" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if project.tasks.count > 0 %}
+                        <div class="flex items-center gap-2 text-base-content opacity-90">
+                            <i class="fas fa-tasks text-success"></i>
+                            <span>{{ project.tasks.count }} tâche{{ project.tasks.count|pluralize:"s" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if project.description %}
+                        <div class="flex items-center gap-2 text-base-content opacity-90">
+                            <i class="fas fa-file-alt text-primary"></i>
+                            <span class="truncate">{{ project.description|truncatechars:40 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Inclusion de la modal pour chaque projet -->
+            {% include "projects/partials/delete_project_modal.html" with project=project %}
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <span>Vous n'avez pas encore de projets. Créez votre premier projet en cliquant sur le bouton "Nouveau projet".</span>
+    </div>
+{% endif %}
+
+
