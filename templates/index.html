@@ -1,7 +1,95 @@
 {% extends "base.html" %}
 
+{% block title %}Accueil - ProJo{% endblock %}
+
 {% block content %}
-    <h1>Accueil</h1>
+<div class="hero min-h-[70vh] bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+    <div class="hero-content text-center w-full">
+        <div class="max-w-7xl w-full mx-auto">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-8 text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                Bienvenue sur ProJo
+            </h1>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-8">
+                <div class="card bg-info text-info-content shadow-xl hover:scale-105 transition-transform w-full">
+                    <div class="card-body items-center text-center p-4 sm:p-6 lg:p-8">
+                        <div class="card-title gap-2 sm:gap-3 flex-col">
+                            <i class="fas fa-list-check text-4xl sm:text-5xl mb-2 text-white"></i>
+                            <span class="badge badge-white text-info">Nouveau</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold my-2 sm:my-4 text-white">Gestion de Tâches</h3>
+                        <p class="text-sm sm:text-base opacity-90 px-2 sm:px-4">
+                            <i class="fas fa-check text-sm mr-2 text-white"></i>Créez des tâches
+                            <br class="hidden sm:block">
+                            <i class="fas fa-clock text-sm mr-2 text-white"></i>Définissez des échéances
+                            <br class="hidden sm:block">
+                            <i class="fas fa-tag text-sm mr-2 text-white"></i>Organisez par catégories
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card bg-success text-success-content shadow-xl hover:scale-105 transition-transform w-full">
+                    <div class="card-body items-center text-center p-4 sm:p-6 lg:p-8">
+                        <div class="card-title gap-2 sm:gap-3 flex-col">
+                            <i class="fas fa-people-group text-4xl sm:text-5xl mb-2 text-white"></i>
+                            <span class="badge badge-white text-success">Popular</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold my-2 sm:my-4 text-white">Collaboration</h3>
+                        <p class="text-sm sm:text-base opacity-90 px-2 sm:px-4">
+                            <i class="fas fa-comments text-sm mr-2 text-white"></i>Chat en temps réel
+                            <br class="hidden sm:block">
+                            <i class="fas fa-share-nodes text-sm mr-2 text-white"></i>Partage de fichiers
+                            <br class="hidden sm:block">
+                            <i class="fas fa-user-plus text-sm mr-2 text-white"></i>Invitez votre équipe
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card bg-warning text-warning-content shadow-xl hover:scale-105 transition-transform w-full sm:col-span-2 lg:col-span-1">
+                    <div class="card-body items-center text-center p-4 sm:p-6 lg:p-8">
+                        <div class="card-title gap-2 sm:gap-3 flex-col">
+                            <i class="fas fa-chart-pie text-4xl sm:text-5xl mb-2 text-white"></i>
+                            <span class="badge badge-white text-warning">Pro</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold my-2 sm:my-4 text-white">Suivi en Temps Réel</h3>
+                        <p class="text-sm sm:text-base opacity-90 px-2 sm:px-4">
+                            <i class="fas fa-gauge-high text-sm mr-2 text-white"></i>Tableaux de bord
+                            <br class="hidden sm:block">
+                            <i class="fas fa-chart-column text-sm mr-2 text-white"></i>Statistiques détaillées
+                            <br class="hidden sm:block">
+                            <i class="fas fa-bell text-sm mr-2 text-white"></i>Notifications
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider text-base sm:text-lg font-semibold">Commencez maintenant</div>
+
+            <div class="mt-4">
+                {% if user.is_authenticated %}
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <a href="{% url 'projects:list' %}" class="btn btn-primary w-full sm:w-auto">
+                            Mes Projets
+                        </a>
+                        <form action="{% url 'accounts:logout' %}" method="post" class="w-full sm:w-auto">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-error w-full">
+                                Déconnexion
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <a href="{% url 'accounts:login' %}" class="btn btn-sm normal-case bg-gradient-to-r from-sky-600 to-cyan-600 text-white border-0 hover:from-sky-700 hover:to-cyan-700 w-full sm:w-auto">
+                            Connexion
+                        </a>
+                        <a href="{% url 'accounts:register' %}" class="btn btn-sm normal-case bg-gradient-to-r from-sky-600 to-cyan-600 text-white border-0 hover:from-sky-700 hover:to-cyan-700 w-full sm:w-auto">
+                            Créer un compte
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
-
-
