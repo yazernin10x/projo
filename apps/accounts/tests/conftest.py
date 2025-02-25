@@ -7,7 +7,7 @@ LAST_NAME = "Doe"
 USERNAME = "john.doe"
 PHONE_NUMBER = "+33666666666"
 EMAIL = "john.doe@example.com"
-PASSWORD = "password"
+PASSWORD = "zootoR587"
 
 
 @pytest.fixture(scope="function")

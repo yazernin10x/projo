@@ -1,41 +1,68 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import DeleteView
+from django.views.generic import DeleteView, CreateView, UpdateView
 from django.urls import reverse_lazy
-from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-
+from django.contrib.auth.views import LoginView, LogoutView
 
 from .forms import UserRegisterForm, UserUpdateForm
 from .models import User
 
-
-def register(request):
-    if request.method == "POST":
-        form = UserRegisterForm(request.POST, request.FILES)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, "Your account has been created successfully!")
-            return redirect("index")
-    else:
-        form = UserRegisterForm()
-    return render(request, "accouns/register.html", {"form": form})
+from http import HTTPStatus
 
 
-@login_required
-def profile(request):
-    if request.method == "POST":
-        form = UserUpdateForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Your profile has been updated!")
-            return redirect("accounts:profile")
-    else:
-        form = UserUpdateForm(instance=request.user)
+class ProjoLoginView(LoginView):
+    template_name = "accounts/login.html"
+    success_message = "Connexion réussie ! Bienvenue"
 
-    return render(request, "accounts/profile.html", {"form": form})
+    def form_valid(self, form):
+        messages.success(self.request, self.success_message)
+        return super().form_valid(form)
+
+
+class ProjoLogoutView(LogoutView):
+    template_name = "accounts/logout.html"
+    success_message = "Déconnexion réussie ! A bientôt"
+
+    def dispatch(self, request, *args, **kwargs):
+        messages.success(self.request, self.success_message)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class UserRegisterView(CreateView):
+    model = User
+    form_class = UserRegisterForm
+    template_name = "accounts/register.html"
+    success_url = reverse_lazy("accounts:login")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Your account has been created successfully!")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Your form contains errors")
+        response = super().form_invalid(form)
+        response.status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+        return response
+
+
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+    form_class = UserUpdateForm
+    template_name = "accounts/profile.html"
+    success_url = reverse_lazy("accounts:profile")
+
+    def get_object(self):
+        return self.request.user
+
+    def form_valid(self, form):
+        messages.success(self.request, "Your profile has been updated!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Your profile contains errors")
+        response = super().form_invalid(form)
+        response.status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+        return response
 
 
 class UserDeleteView(LoginRequiredMixin, DeleteView):
@@ -43,6 +70,4 @@ class UserDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "accounts/user_confirm_delete.html"
     success_url = reverse_lazy("index")
     context_object_name = "user"
-
-    def get_object(self, queryset=None):
-        return self.request.user
+    success_message = "Your account has been deleted successfully!"
