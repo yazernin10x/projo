@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+{% load status_filters %}
+
+{% block title %} Détail de la tâche - ProJo {% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête avec titre et actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div class="flex items-center gap-4">
+            <div class="bg-info/10 p-3 rounded-xl">
+                <i class="fas fa-tasks text-2xl text-info"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
+                    <a href="{% url 'projects:list' %}" class="hover:text-info transition-colors text-info">
+                        <i class="fas fa-folder mr-1"></i>
+                        Projets
+                    </a>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                    <a href="{% url 'projects:detail' task.project.id %}" class="hover:text-info transition-colors text-info">
+                        <i class="fas fa-project-diagram mr-1"></i>
+                        {{ task.project.title }}
+                    </a>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                    <span class="text-base-content/70">Tâche</span>
+                </div>
+                <h1 class="text-3xl font-bold">{{ task.title }}</h1>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            {% if user == task.author or user_role == "moderator" %}
+                <a href="{% url 'tasks:update' task.id %}" 
+                   class="btn btn-warning btn-outline hover:btn-warning group">
+                    <i class="fa-solid fa-pen-to-square group-hover:rotate-12 transition-transform"></i>
+                    <span class="ml-2">Modifier</span>
+                </a>
+            {% endif %}
+            {% if user == task.author %}
+                <!-- Bouton pour ouvrir la modale -->
+                <button onclick="openModal({{ task.id }}, 'task', 'delete')" 
+                        class="btn btn-error btn-outline hover:btn-error group">
+                    <i class="fa-solid fa-trash-can group-hover:scale-110 transition-transform"></i>
+                    <span class="ml-2">Supprimer</span>
+                </button>
+            {% endif %}
+            <a href="{% url 'projects:detail' task.project.id %}" 
+               class="btn btn-neutral hover:bg-neutral-focus group">
+                <i class="fas fa-chevron-left group-hover:-translate-x-1 transition-transform"></i>
+                <span class="ml-2">Retour</span>
+            </a>
+        </div>
+        {% include "tasks/partials/delete_task_modal.html" with task=task %}
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Colonne principale -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Carte des détails -->
+            <!-- Description avec un design moderne -->
+            <div class="mb-6">
+                <div class="bg-base-100 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <div class="flex items-center p-4 border-b border-base-content/10">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-primary/10 p-2 rounded-lg">
+                                <i class="fas fa-book text-primary"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold">Description</h3>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        {% if task.description %}
+                            <div class="prose prose-sm max-w-none">
+                                {{ task.description|linebreaks }}
+                            </div>
+                        {% else %}
+                            <div class="flex flex-col items-center justify-center py-8 text-center">
+                                <div class="bg-base-200 rounded-full p-4 mb-3">
+                                    <i class="fas fa-file-alt text-2xl text-base-content/40"></i>
+                                </div>
+                                <p class="text-base-content/60 font-medium">Aucune description fournie</p>
+                                <p class="text-sm text-base-content/40 mt-1">Modifiez la tâche pour ajouter une description</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section commentaires -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fa-solid fa-comments text-primary mr-2"></i>
+                    Commentaires
+                </h2>
+                <button id="create_comment_button_{{ task.id }}"
+                        class="btn btn-primary"
+                        hx-get="{% url 'tasks:get_comment_create_form' task.id %}"
+                        hx-target="#create-comment-modal-container-{{ task.id }}"
+                        hx-trigger="click">
+                    <i class="fa-solid fa-comment mr-2"></i>
+                    Ajouter un commentaire
+                </button>
+            </div>
+            
+            <!-- Conteneur pour la modale -->
+            <div id="create-comment-modal-container-{{ task.id }}">
+                {% include "tasks/partials/comment_form_modal.html" %}
+            </div>
+
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                <div class="card-body">
+                    {% if comments %}
+                        <div class="divide-y divide-base-200">
+                            {% for comment in comments %}
+                                <div class="py-4 {% if not forloop.first %}pt-6{% endif %}">
+                                    <!-- En-tête du commentaire -->
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="avatar placeholder">
+                                                <div class="bg-primary/10 text-primary rounded-full w-10">
+                                                    <span>{{ comment.author.username|make_list|first|upper }}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="font-medium">{{ comment.author.username }}</div>
+                                                <div class="text-xs text-base-content/60 flex items-center gap-2">
+                                                    <span>{{ comment.created_at|date:"d/m/Y H:i" }}</span>
+                                                    {% if comment.updated_at and comment.updated_at != comment.created_at %}
+                                                        <span>•</span>
+                                                        <span class="italic">modifié le {{ comment.updated_at|date:"d/m/Y H:i" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if user == task.author or user == comment.author or user_role == "moderator" %}
+                                            <div class="flex gap-2">
+                                                <button id="update_comment_button_{{ comment.pk }}"
+                                                        hx-get="{% url 'tasks:get_comment_update_form' comment.id %}"
+                                                        hx-target="#update-comment-modal-container-{{ comment.id }}"
+                                                        hx-trigger="click"
+                                                        class="btn btn-ghost btn-sm btn-square hover:bg-warning/10">
+                                                    <i class="fa-solid fa-pen-to-square text-warning"></i>
+                                                </button>
+                                                <!-- Conteneur pour la modale -->
+                                                <div id="update-comment-modal-container-{{ comment.id }}">
+                                                    {% include "tasks/partials/comment_form_modal.html" %}
+                                                </div>
+
+                                                <button onclick="openModal({{ comment.id }}, 'comment', 'delete')" 
+                                                        class="btn btn-ghost btn-sm btn-square hover:bg-error/10">
+                                                    <i class="fa-solid fa-trash text-error"></i>
+                                                </button>
+                                                {% include "tasks/partials/delete_comment_modal.html" with comment=comment %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Contenu du commentaire -->
+                                    <div class="pl-13">
+                                        <div class="prose prose-sm max-w-none bg-base-200/50 p-4 rounded-lg">
+                                            {{ comment.content|linebreaks }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <div class="bg-base-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                <i class="fa-solid fa-comment-slash text-3xl text-base-content/40"></i>
+                            </div>
+                            <p class="text-base-content/60 font-medium">Aucun commentaire pour le moment</p>
+                            <p class="text-sm text-base-content/40 mt-1">Soyez le premier à commenter !</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Carte d'informations principale -->
+            <div class="bg-base-100 rounded-2xl shadow-lg overflow-hidden border border-base-300">
+                <!-- En-tête avec statut -->
+                <div class="bg-base-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold">État de la tâche</h2>
+                        <span class="badge badge-lg {{ task.status|status_color }} font-semibold">
+                            {{ task.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Corps avec les informations -->
+                <div class="p-6 space-y-6">
+                    <!-- Échéance -->
+                    <div class="bg-base-200 rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-base-300 p-2 rounded-lg">
+                                    <i class="fa-solid fa-calendar text-base-content"></i>
+                                </div>
+                                <span class="font-medium">Échéance</span>
+                            </div>
+                            <span class="font-semibold">{{ task.deadline|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Assignations -->
+                    <div class="bg-base-200 rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="bg-base-300 p-2 rounded-lg">
+                                <i class="fa-solid fa-users text-base-content"></i>
+                            </div>
+                            <span class="font-medium">Assignées</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            {% for user in task.assigned_to.all %}
+                                <div class="badge bg-base-300 text-base-content gap-1 px-3 py-3">
+                                    <i class="fa-solid fa-user text-xs"></i>
+                                    {{ user.username }}
+                                </div>
+                            {% empty %}
+                                <p class="text-sm text-base-content/60 italic">Aucune personne assignée</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Métadonnées -->
+                    <div class="bg-base-200 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="bg-base-300 p-1.5 rounded-lg">
+                                    <i class="fa-solid fa-clock text-base-content text-xs"></i>
+                                </div>
+                                <span class="text-base-content/70">Créée le</span>
+                            </div>
+                            <span class="font-medium">{{ task.created_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="bg-base-300 p-1.5 rounded-lg">
+                                    <i class="fa-solid fa-pen-fancy text-base-content text-xs"></i>
+                                </div>
+                                <span class="text-base-content/70">Modifiée le</span>
+                            </div>
+                            <span class="font-medium">{{ task.updated_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="bg-base-300 p-1.5 rounded-lg">
+                                    <i class="fa-solid fa-user text-base-content text-xs"></i>
+                                </div>
+                                <span class="text-base-content/70">Auteur</span>
+                            </div>
+                            <span class="font-medium">{{ task.author.username }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+    <script src="{% static 'core/js/modal_utils.js' %}"></script>
+    <script>
+        // Ouvrir la modale automatiquement
+        document.addEventListener('htmx:afterSwap', function(event) {
+            id_splited = event.target.id.split('-');
+            buttonId = `${id_splited[0]}_comment_modal_${id_splited.pop()}`
+            const modal = document.getElementById(buttonId);
+            if (modal) {
+                modal.showModal();
+            }
+        });
+    </script>
+{% endblock %}
