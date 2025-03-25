@@ -1,0 +1,100 @@
+<header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <nav class="container mx-auto flex justify-between items-center py-3 px-4">
+        <!-- Logo -->
+        <a href="{% url 'index' %}" class="flex items-center space-x-3">
+            <i class="fas fa-tasks text-3xl text-sky-600 dark:text-sky-400"></i>
+            <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-cyan-600 dark:from-sky-400 dark:to-cyan-400">ProJo</span>
+        </a>
+
+        <!-- Liens utilisateur -->
+        <div class="flex items-center space-x-8">
+            {% if user.is_authenticated %}
+                <a href="{% url 'projects:list' %}" class="flex items-center text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                    <i class="fas fa-clipboard-list mr-2"></i>
+                    <span>Projets</span>
+                </a>
+                
+                <!-- Notifications -->
+                <div class="dropdown dropdown-end">
+                    <label tabindex="0" class="btn btn-ghost btn-circle">
+                        <div class="indicator">
+                            <i class="fas fa-bell text-xl text-gray-700 dark:text-gray-300"></i>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-500 flex items-center justify-center text-xs font-bold text-white">
+                                    {{ unread_notifications_count }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </label>
+                    <ul tabindex="0" class="dropdown-content menu p-2 shadow-lg bg-white dark:bg-gray-800 rounded-box w-72 mt-4 border border-gray-200 dark:border-gray-700">
+                        <li class="menu-title">
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">Notifications</span>
+                        </li>
+                        <li><a href="{% url 'notifications:list' %}" class="text-sky-600 dark:text-sky-400 hover:bg-gray-100 dark:hover:bg-gray-700">Voir toutes les notifications</a></li>
+                    </ul>
+                </div>
+
+                <!-- Menu déroulant utilisateur -->
+                <div class="dropdown dropdown-end">
+                    <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
+                            <i class="fas fa-user text-white text-lg"></i>
+                        </div>
+                    </label>
+                    <ul tabindex="0" class="mt-4 dropdown-content menu menu-sm p-2 shadow-lg bg-white dark:bg-gray-800 rounded-box w-52 border border-gray-200 dark:border-gray-700 z-50">
+                        <li>
+                            <a href="{% url 'accounts:profile' %}" class="hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                                <i class="fas fa-user-circle text-gray-600 dark:text-gray-400"></i>
+                                <span>Profil</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'accounts:logout' %}" id="logout-link" class="hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                                <i class="fas fa-sign-out-alt text-gray-600 dark:text-gray-400"></i>
+                                <span>Déconnexion</span>
+                            </a>
+                        </li>
+                        <div class="divider my-0.5"></div>
+                        <li>
+                            <a href="{% url 'accounts:delete' user.id %}" class="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-sm">
+                                <i class="fas fa-user-times"></i>
+                                <span>Supprimer le compte</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            {% else %}
+                <a href="{% url 'accounts:register' %}" class="btn btn-ghost btn-sm normal-case text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <i class="fas fa-user-plus mr-2"></i>Créer un compte
+                </a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-sm normal-case bg-gradient-to-r from-sky-600 to-cyan-600 text-white border-0 hover:from-sky-700 hover:to-cyan-700">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Connexion
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+</header>
+
+
+{% block scripts %}
+<script>
+    let logoutLink = document.getElementById('logout-link');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            fetch("{% url 'accounts:logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}

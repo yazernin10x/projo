@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Liste des projets - ProJo {% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-2 py-8 max-w-full">
+    <!-- En-tête -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="flex items-center space-x-4 text-4xl font-black">
+            <span class="relative inline-block px-6 py-3">
+                <span class="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 transform -skew-x-12 rounded-lg"></span>
+                <span class="relative flex items-center">
+                    <i class="fas fa-project-diagram mr-3 text-primary transition-all duration-300 hover:scale-110"></i>
+                    Liste des projets
+                </span>
+                <span class="absolute -top-1 -right-1">
+                    <i class="fas fa-sparkles text-xs text-primary/70 animate-ping"></i>
+                </span>
+            </span>
+        </h1>
+        <a href="{% url 'projects:create' %}" 
+           class="btn btn-primary btn-lg shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:scale-105 group">
+            <i class="fas fa-plus text-lg mr-2 group-hover:rotate-90 transition-transform duration-300"></i>
+            <span>Nouveau projet</span>
+            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform duration-300"></i>
+        </a>
+    </div>
+
+    <!-- Section des projets -->
+    <div class="grid gap-8 md:grid-cols-1 lg:grid-cols-1 w-full">
+        <!-- Liste des projets créés par moi -->
+        <div class="card bg-base-200 shadow-xl w-full">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">
+                    <i class="fas fa-folder-open mr-2"></i>Mes projets
+                </h2>
+                {% include "projects/partials/project_card_list.html" with 
+                    projects=projects
+                    is_owner=True
+                    no_projects_message="<i class='fas fa-info-circle mr-2'></i>Aucun projet n'a été créé pour le moment." 
+                %}
+            </div>
+        </div>
+
+        <!-- Liste des projets dont je suis membre -->
+        <div class="card bg-base-200 shadow-xl w-full">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">
+                    <i class="fas fa-users mr-2"></i>Projets partagés
+                </h2>
+                {% include "projects/partials/project_card_list.html" with 
+                    projects=member_projects 
+                    is_owner=False
+                    no_projects_message="<i class='fas fa-info-circle mr-2'></i>Vous n'êtes membre d'aucun projet pour le moment." 
+                %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'core/js/modal_utils.js' %}"></script>
+{% endblock %}

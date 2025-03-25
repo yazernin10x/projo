@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Notifications</h1>
+        
+        
+        {% if notifications.count > 0 %}
+        <div class="flex gap-2">
+            <a href="{% url 'notifications:mark_all_as_read' %}" class="btn btn-outline btn-sm">
+                Tout marquer comme lu
+            </a>
+            
+            <a href="{% url 'notifications:mark_all_as_unread' %}" class="btn btn-outline btn-sm">
+                Tout marquer comme non lu
+            </a>
+
+            <form action="{% url 'notifications:delete_all' %}" method="POST" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-error btn-sm">
+                    Supprimer tout
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+        <div class="space-y-4">
+            {% for notification in notifications %}
+                <div class="card bg-base-100 shadow-xl {% if not notification.is_read %}border-l-4 border-primary{% endif %}">
+                    <div class="card-body">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <p class="text-lg">{{ notification.content|linebreaks }}</p>
+                                <p class="text-sm text-gray-500">{{ notification.created_at|timesince }}</p>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                {% if notification.is_read %}
+                                    <a href="{% url 'notifications:mark_as_unread' pk=notification.pk %}" class="btn btn-ghost btn-sm">
+                                        Marquer comme non lu
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'notifications:mark_as_read' pk=notification.pk %}" class="btn btn-ghost btn-sm">
+                                        Marquer comme lu
+                                    </a>
+                                {% endif %}
+                                
+                                <form action="{% url 'notifications:delete' pk=notification.pk %}" method="POST" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-ghost btn-sm text-error">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">Aucune notification</p>
+        </div>
+    {% endif %}
+</div>
+
+{% if messages %}
+<div class="toast toast-end">
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% else %}alert-info{% endif %}">
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
