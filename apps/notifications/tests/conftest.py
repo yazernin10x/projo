@@ -1,62 +1,85 @@
+from datetime import timedelta
+from django.utils import timezone
 import pytest
 from apps.accounts.models import User
 from apps.notifications.models import Notification
-
-USER_FIRST_NAME = "John"
-USER_LAST_NAME = "Doe"
-USERNAME = "john.doe"
-USER_EMAIL = "john.doe@example.com"
-USER_PASSWORD = "zootoR587"
-
-NOTIFICATION_MESSAGE = "Test notification"
-NOTIFICATION_IS_READ = False
-
-HTTP_200_OK = 200
-HTTP_302_FOUND = 302
-HTTP_404_NOT_FOUND = 404
-HTTP_422_UNPROCESSABLE_ENTITY = 422
+from apps.core.constants import (
+    NOTIFICATION_TITLE,
+    NOTIFICATION_CONTENT,
+)
+from apps.core.tests.fixtures import (
+    user_1,
+    user_2,
+    user_1_connected,
+    user_2_connected,
+)
 
 
 @pytest.fixture(scope="function")
-def user(db):
-    return User.objects.create_user(
-        first_name=USER_FIRST_NAME,
-        last_name=USER_LAST_NAME,
-        username=USERNAME,
-        email=USER_EMAIL,
-        password=USER_PASSWORD,
+def notification(db, user_1: User, user_2: User):
+    notif = Notification.objects.create(
+        title=NOTIFICATION_TITLE,
+        content=NOTIFICATION_CONTENT,
+        sender=user_1,
     )
+    notif.recipients.add(user_2)
+    notif.save()
+    return notif
 
 
 @pytest.fixture(scope="function")
-def notification(db, user: User):
-    notify = Notification.objects.create(message=NOTIFICATION_MESSAGE)
-    notify.users.add(user)
-    notify.save()
-    return notify
+def notifications(user_1: User, user_2: User):
+    today = timezone.now()
+    yesterday = today - timedelta(days=1)
+    last_week = today - timedelta(days=7)
+    last_month = today - timedelta(days=30)
 
-
-@pytest.fixture
-def many_notifications(user: User):
-    notif_1 = Notification.objects.create(message="Notification 1")
-    notif_1.users.add(user)
+    notif_1 = Notification.objects.create(
+        title="Notification Today",
+        content=NOTIFICATION_CONTENT,
+        is_read=False,
+        sender=user_1,
+    )
+    notif_1.created_at = today
+    notif_1.recipients.add(user_2)
     notif_1.save()
 
-    notif_2 = Notification.objects.create(message="Notification 2")
-    notif_2.users.add(user)
+    notif_2 = Notification.objects.create(
+        title="Notification Yesterday",
+        content=NOTIFICATION_CONTENT,
+        is_read=False,
+        sender=user_1,
+    )
+    notif_2.created_at = yesterday
+    notif_2.recipients.add(user_2)
     notif_2.save()
 
-    notif_3 = Notification.objects.create(message="Notification 3")
-    notif_3.users.add(user)
+    notif_3 = Notification.objects.create(
+        title="Notification Last Week",
+        content=NOTIFICATION_CONTENT,
+        is_read=True,
+        sender=user_1,
+    )
+    notif_3.created_at = last_week
+    notif_3.recipients.add(user_2)
     notif_3.save()
 
-    return [notif_1, notif_2, notif_3]
+    notif_4 = Notification.objects.create(
+        title="Notification Last Month",
+        content=NOTIFICATION_CONTENT,
+        is_read=True,
+        sender=user_1,
+    )
+    notif_4.created_at = last_month
+    notif_4.recipients.add(user_2)
+    notif_4.save()
+    return [notif_1, notif_2, notif_3, notif_4]
 
 
-@pytest.fixture
-def valid_notification_data():
+@pytest.fixture(scope="function")
+def valid_data():
     return {
-        "message": NOTIFICATION_MESSAGE,
-        "is_read": NOTIFICATION_IS_READ,
-        "users": None,
+        "title": NOTIFICATION_TITLE,
+        "content": NOTIFICATION_CONTENT,
+        "recipients": None,
     }

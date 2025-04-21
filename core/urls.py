@@ -16,8 +16,34 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import TemplateView
+from django.conf.urls import handler400, handler403, handler404, handler500
+
+from apps.core.views import custom_404, custom_500, custom_403, custom_400
+
+handler400 = custom_400
+handler403 = custom_403
+handler404 = custom_404
+handler500 = custom_500
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("__reload__/", include("django_browser_reload.urls")),
+    path("api/", include("apps.api.urls", "api")),
+    path("tasks/", include("apps.tasks.urls", "tasks")),
+    path("accounts/", include("apps.accounts.urls", "accounts")),
+    path("projects/", include("apps.projects.urls", "projects")),
+    path("comments/", include("apps.comments.urls", "comments")),
+    path("", TemplateView.as_view(template_name="index.html"), name="index"),
+    path("notifications/", include("apps.notifications.urls", "notifications")),
+    path("dashboard/", include("apps.dashboard.urls", "dashboard")),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

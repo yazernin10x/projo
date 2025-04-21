@@ -1,39 +1,22 @@
-from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
+from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import (
     DetailView,
     CreateView,
     UpdateView,
     DeleteView,
 )
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 
 from apps.projects.models import Project, ProjectMember
-from apps.tasks.tests.conftest import HTTP_422_UNPROCESSABLE_ENTITY
-
-from .models import Task
-from .forms import TaskCreateForm, TaskUpdateForm
+from apps.tasks.models import Task
+from apps.tasks.forms import TaskForm
 from apps.comments.models import Comment
-from apps.accounts.models import User
-from apps.comments.forms import CommentForm
-
-
-from django.shortcuts import render
-
-
-def get_comment_create_form(request, task_pk):
-    form = CommentForm()
-    task = get_object_or_404(Task, pk=task_pk)
-    context = {"form": form, "task": task}
-    return render(request, "tasks/partials/comment_form_modal.html", context)
-
-
-def get_comment_update_form(request, comment_pk):
-    comment = get_object_or_404(Comment, pk=comment_pk)
-    form = CommentForm(instance=comment)
-    context = {"form": form, "comment": comment}
-    return render(request, "tasks/partials/comment_form_modal.html", context)
+from apps.core.constants import HTTP_403_FORBIDDEN, HTTP_400_BAD_REQUEST
 
 
 class TaskDetailView(LoginRequiredMixin, DetailView):
@@ -41,49 +24,31 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     template_name = "tasks/detail.html"
     context_object_name = "task"
 
-    def get_object(self):
-        user = self.request.user
-        if self.kwargs.get("owner_pk"):
-            user = get_object_or_404(User, pk=self.kwargs["owner_pk"])
-
-        return get_object_or_404(Task, pk=self.kwargs["pk"], author=user)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        comments = Comment.objects.filter(task=self.object)
-        context["comments"] = comments
-
-        query_set = Task.objects.filter(assigned_to=self.request.user)
-        assigned_tasks = query_set.order_by("-created_at")
-        context["assigned_tasks"] = assigned_tasks
-
-        project = self.object.project
-        if project.members and self.kwargs.get("owner_pk"):
-            context["user_role"] = (
-                ProjectMember.objects.filter(user=self.request.user).first().role
-            )
-            print(context["user_role"])
+        context["comments"] = Comment.objects.filter(task=self.object)
         return context
 
 
-class TaskCreateView(LoginRequiredMixin, CreateView):
+class TaskCreateView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
     model = Task
-    form_class = TaskCreateForm
+    form_class = TaskForm
     template_name = "tasks/task_form.html"
+    success_message = "La tâche a été créée avec succès."
+
+    def get_success_url(self):
+        return reverse_lazy("tasks:detail", kwargs={"pk": self.object.pk})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        kwargs["project"] = get_object_or_404(Project, pk=self.kwargs["project_pk"])
+        return kwargs
 
     def form_valid(self, form):
         form.instance.author = self.request.user
         form.instance.project = get_object_or_404(Project, pk=self.kwargs["project_pk"])
         return super().form_valid(form)
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Invalid form")
-        return super().form_invalid(form)
-
-    def get_success_url(self) -> str:
-        messages.success(self.request, "Task created successfully")
-        return reverse_lazy("projects:detail", kwargs={"pk": self.object.project.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -91,43 +56,68 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class TaskUpdateView(LoginRequiredMixin, UpdateView):
+class TaskUpdateView(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
     model = Task
-    form_class = TaskUpdateForm
+    form_class = TaskForm
+    context_object_name = "task"
     template_name = "tasks/task_form.html"
+    success_message = "La tâche a été modifiée avec succès."
 
-    def form_valid(self, form):
-        return super().form_valid(form)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        kwargs["project"] = self.object.project
+        return kwargs
 
-    def form_invalid(self, form):
-        response = super().form_invalid(form)
-        response.status_code = HTTP_422_UNPROCESSABLE_ENTITY
-        messages.error(self.request, "Invalid form")
-        return response
-
-    def get_success_url(self) -> str:
-        messages.success(self.request, "Task updated successfully")
-        return reverse_lazy("projects:detail", kwargs={"pk": self.object.project.pk})
+    def get_success_url(self):
+        return reverse_lazy("tasks:detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["project"] = get_object_or_404(Project, pk=self.object.project.pk)
-
-        project = self.object.project
-        if project.members and self.kwargs.get("owner_pk"):
-            context["user_role"] = (
-                ProjectMember.objects.filter(user=self.request.user).first().role
-            )
-            print(context["user_role"])
         return context
 
 
-class TaskDeleteView(LoginRequiredMixin, DeleteView):
+class TaskDeleteView(SuccessMessageMixin, LoginRequiredMixin, DeleteView):
     model = Task
-
-    def get_object(self):
-        return get_object_or_404(Task, pk=self.kwargs["pk"], author=self.request.user)
+    success_message = "La tâche a été supprimée avec succès."
 
     def get_success_url(self):
-        messages.success(self.request, "Task(s) deleted successfully")
         return reverse_lazy("projects:detail", kwargs={"pk": self.object.project.pk})
+
+
+@require_POST
+@login_required
+def update_task_status(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+
+    if not (
+        request.user.is_superuser
+        or request.user == task.author
+        or ProjectMember.objects.filter(
+            user=request.user, project=task.project, role="moderator"
+        ).exists()
+    ):
+        return JsonResponse(
+            {"status": "error", "message": "Permission refusée"},
+            status=HTTP_403_FORBIDDEN,
+        )
+
+    if request.method == "POST":
+        new_status = request.POST.get("status")
+        if new_status in dict(Task.Status.choices):
+            task.status = new_status
+            task.save()
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "task_status": new_status,
+                    "task_status_display": task.get_status_display(),
+                }
+            )
+
+    return JsonResponse(
+        {"status": "error", "message": "Statut invalide"},
+        status=HTTP_400_BAD_REQUEST,
+    )

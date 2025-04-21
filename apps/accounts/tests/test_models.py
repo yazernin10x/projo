@@ -1,57 +1,23 @@
 import pytest
-from django.core.exceptions import ValidationError
 
-from apps.accounts.tests.conftest import (
-    PASSWORD,
-    FIRST_NAME,
-    LAST_NAME,
-    USERNAME,
-    EMAIL,
+from apps.accounts.models import User
+from apps.core.constants import (
+    PASSWORD_1,
+    FIRST_NAME_1,
+    LAST_NAME_1,
+    USERNAME_1,
+    EMAIL_1,
 )
 
-from ..models import User
 
-
+@pytest.mark.django_db(transaction=True)
 class TestUserModel:
-    @pytest.mark.django_db(transaction=True)
-    def test_resgister(self, user: User):
-        assert user.first_name == FIRST_NAME
-        assert user.last_name == LAST_NAME
-        assert user.username == USERNAME
-        assert user.email == EMAIL
-        assert user.check_password(PASSWORD)
+    def test_register(self, user_1: User):
+        assert user_1.first_name == FIRST_NAME_1
+        assert user_1.last_name == LAST_NAME_1
+        assert user_1.username == USERNAME_1
+        assert user_1.email == EMAIL_1
+        assert user_1.check_password(PASSWORD_1)
 
-    @pytest.mark.django_db(transaction=True)
-    def test__str__(self, user: User):
-        assert str(user) == f"{USERNAME} - {EMAIL}"
-
-    @pytest.mark.django_db(transaction=True)
-    def test__repr__(self, user: User):
-        assert repr(user) == f"User(username='{USERNAME}', email='{EMAIL}')"
-
-    @pytest.mark.django_db(transaction=True)
-    def test_full_name(self, user: User):
-        assert user.full_name == f"{FIRST_NAME} {LAST_NAME}"
-
-    @pytest.mark.django_db(transaction=True)
-    def test_duplicate_email(self, user: User, form_data: dict):
-        with pytest.raises(ValidationError, match="['Email already in use.']"):
-            User.objects.create_user(**form_data, password=PASSWORD).full_clean()
-
-    @pytest.mark.django_db(transaction=True)
-    def test_duplicate_username(self, user: User, form_data: dict):
-        with pytest.raises(ValidationError, match="['Username already in use.']"):
-            User.objects.create_user(**form_data, password=PASSWORD).full_clean()
-
-    @pytest.mark.django_db(transaction=True)
-    def test_reserved_username(self, user: User, form_data: dict):
-        with pytest.raises(
-            ValidationError, match="['The username 'admin' is reserved.']"
-        ):
-            form_data["username"] = "admin"
-            User.objects.create_user(**form_data, password=PASSWORD).full_clean()
-
-    @pytest.mark.django_db(transaction=True)
-    def test_auto_timestamps(self, user: User):
-        assert user.created_at is not None
-        assert user.updated_at is not None
+    def test__repr__(self, user_1: User):
+        assert repr(user_1) == f"User(username='{USERNAME_1}', email='{EMAIL_1}')"

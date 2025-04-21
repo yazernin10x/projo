@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - ProJo{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <h1 class="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 text-center">Tableau de Bord</h1>
+    
+    <!-- Groupe 1: Projets -->
+    <div class="mb-6 sm:mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {% comment %} {% if total_projects %}
+            <div class="card bg-primary text-primary-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-project-diagram text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets Totaux</h2>
+                        <p class="text-xl sm:text-2xl">{{ total_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %} {% endcomment %}
+            {% if member_projects %}
+            <div class="card bg-primary text-primary-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-users-cog text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets Membre</h2>
+                        <p class="text-xl sm:text-2xl">{{ member_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% comment %} {% if ongoing_projects %}
+            <div class="card bg-secondary text-secondary-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-spinner text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets en Cours</h2>
+                        <p class="text-xl sm:text-2xl">{{ ongoing_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %} {% endcomment %}
+            {% comment %} {% if completed_projects %}
+            <div class="card bg-accent text-accent-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-check-circle text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets Terminés</h2>
+                        <p class="text-xl sm:text-2xl">{{ completed_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %} {% endcomment %}
+            {% comment %} {% if delayed_projects %}
+            <div class="card bg-warning text-warning-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-exclamation-triangle text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets en Retard</h2>
+                        <p class="text-xl sm:text-2xl">{{ delayed_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %} {% endcomment %}
+            {% comment %} {% if upcoming_projects %}
+            <div class="card bg-info text-info-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-calendar-alt text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Projets à Venir</h2>
+                        <p class="text-xl sm:text-2xl">{{ upcoming_projects }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %} {% endcomment %}
+            {% if assigned_tasks %}
+            <div class="card bg-error text-error-content text-white shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-check text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Tâches Assignées</h2>
+                        <p class="text-xl sm:text-2xl">{{ assigned_tasks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Groupe 2: Tâches -->
+    {% comment %} <div class="mb-6 sm:mb-8">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4">Tâches</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {% if tasks_todo %}
+            <div class="card bg-error text-error-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-tasks text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Tâches à Faire</h2>
+                        <p class="text-xl sm:text-2xl">{{ tasks_todo }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if tasks_in_progress %}
+            <div class="card bg-info text-info-content shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-spinner text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Tâches en Cours</h2>
+                        <p class="text-xl sm:text-2xl">{{ tasks_in_progress }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if assigned_tasks %}
+            <div class="card bg-amber-500 text-black shadow-lg p-3 sm:p-4 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-check text-xl sm:text-2xl"></i>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold">Tâches Assignées</h2>
+                        <p class="text-xl sm:text-2xl">{{ assigned_tasks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div> {% endcomment %}
+
+    <!-- Groupe 3: Interactions -->
+    {% comment %} <div class="mb-6 sm:mb-8">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4">Interactions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {% if comments_count %}
+            <div class="card bg-success text-success-content shadow-xl p-4 sm:p-6 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-comments text-2xl sm:text-3xl"></i>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-semibold">Commentaires Totaux</h2>
+                        <p class="text-2xl sm:text-3xl">{{ comments_count }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if total_users %}
+            <div class="card bg-neutral text-neutral-content shadow-xl p-4 sm:p-6 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-users text-2xl sm:text-3xl"></i>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-semibold">Utilisateurs Totaux</h2>
+                        <p class="text-2xl sm:text-3xl">{{ total_users }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if active_users %}
+            <div class="card bg-base-300 text-base-content shadow-xl p-4 sm:p-6 transition-transform hover:scale-105">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-check text-2xl sm:text-3xl"></i>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-semibold">Utilisateurs Actifs</h2>
+                        <p class="text-2xl sm:text-3xl">{{ active_users }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div> {% endcomment %}
+
+    <!-- Section des Graphiques -->
+    <section class="mt-8">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Statistiques et Progrès</h2>
+        {% if total_projects or tasks_todo %}
+        <div class="flex flex-col lg:flex-row justify-center gap-6 sm:gap-8">
+            <div class="w-full lg:w-1/2 p-4 bg-base-100 rounded-lg shadow-lg">
+                <h3 class="text-lg sm:text-xl font-semibold mb-4 text-center">Statistiques des Tâches</h3>
+                <div class="relative aspect-[4/3] sm:aspect-[16/9]">
+                    <canvas id="tasksChart"></canvas>
+                </div>
+            </div>
+            <div class="w-full lg:w-1/2 p-4 bg-base-100 rounded-lg shadow-lg">
+                <h3 class="text-lg sm:text-xl font-semibold mb-4 text-center">Progrès des Projets</h3>
+                <div class="relative aspect-[4/3] sm:aspect-[16/9]">
+                    <canvas id="projectsProgressChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center p-8 bg-base-100 rounded-lg shadow-lg">
+            <div class="flex flex-col items-center space-y-4">
+                <i class="fas fa-chart-line text-6xl text-primary opacity-50"></i>
+                <h3 class="text-xl font-semibold">Aucune donnée disponible</h3>
+                <p class="text-base-content/70 max-w-md">
+                    Commencez à créer des projets et des tâches pour voir vos statistiques ici !
+                </p>
+                <a href="{% url 'projects:create' %}" class="btn btn-primary mt-4">
+                    <i class="fas fa-plus mr-2"></i>
+                    Créer un nouveau projet
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Configuration des graphiques
+    function createCharts() {
+        const ctxProjects = document.getElementById('projectsProgressChart').getContext('2d');
+        const projectsProgressChart = new Chart(ctxProjects, {
+            type: 'bar',
+            data: {
+                labels: ['Projets Totaux', 'Projets en Cours', 'Projets Terminés', 'Projets en Retard', 'Projets à Venir'],
+                datasets: [{
+                    label: 'Progrès des Projets',
+                    data: [{{ total_projects }}, {{ ongoing_projects }}, {{ completed_projects }}, {{ delayed_projects }}, {{ upcoming_projects }}],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#4BC0C0', '#FFCE56', '#E7E9ED'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: window.innerWidth < 768 ? 10 : 12
+                            }
+                        }
+                    },
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                size: window.innerWidth < 768 ? 10 : 12
+                            }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: {
+                                size: window.innerWidth < 768 ? 10 : 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    
+        const ctx = document.getElementById('tasksChart').getContext('2d');
+        const tasksChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['À faire', 'En cours', 'Terminées'],
+                datasets: [{
+                    label: 'Tâches',
+                    data: [{{ tasks_todo }}, {{ tasks_in_progress }}, {{ tasks_completed }}],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#4BC0C0'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: window.innerWidth < 768 ? 10 : 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Créer les graphiques au chargement
+    createCharts();
+
+    // Recréer les graphiques lors du redimensionnement de la fenêtre
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            // Détruire les anciens graphiques
+            Chart.helpers.each(Chart.instances, function(instance) {
+                instance.destroy();
+            });
+            // Créer de nouveaux graphiques
+            createCharts();
+        }, 250);
+    });
+</script>
+{% endblock %}

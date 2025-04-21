@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur Serveur - ProJo{% endblock %}
+
+{% block content %}
+    {% include "errors/error_base.html" with 
+        color="error"
+        icon="server"
+        error_code="500"
+        error_title="Erreur Serveur"
+        error_message="Oups! Quelque chose s'est mal passé de notre côté. Nos équipes techniques ont été notifiées et travaillent à résoudre le problème."
+        error_code_text="Internal Server Error"
+    %}
+{% endblock %}
+
+{% block extra_content %}
+    <!-- Section d'aide -->
+    <div class="divider mt-8">Besoin d'aide ?</div>
+    <div class="flex flex-col items-center gap-4 text-base-content/70">
+        <p class="text-sm text-center">
+            Si le problème persiste, n'hésitez pas à contacter notre équipe support
+        </p>
+        <div class="flex gap-4">
+            <a href="/contact" class="btn btn-ghost btn-sm gap-2">
+                <i class="fas fa-envelope"></i>
+                Contacter le support
+            </a>
+            <a href="/status" class="btn btn-ghost btn-sm gap-2">
+                <i class="fas fa-signal"></i>
+                État du service
+            </a>
+        </div>
+    </div>
+{% endblock %}

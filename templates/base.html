@@ -1,4 +1,5 @@
 {% load static tailwind_tags %}
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -14,12 +15,15 @@
         <link rel="stylesheet" href="{% static 'css/styles.css' %}">
         <link rel="stylesheet" href="{% static 'css/messages.css' %}">
 
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        
+
         {% block styles %}{% endblock %}
+
+        {% tailwind_preload_css %}
         {% tailwind_css %}
     </head>
-    <body class="bg-gray-50 flex flex-col font-sans text-gray-800">
-        {% include 'partials/messages.html' %}
-        
+    <body class="bg-gray-50 flex flex-col font-sans text-gray-800 min-h-screen flex flex-col">        
         {% include 'partials/header.html' %}
 
         <main class="w-full p-6 flex-grow">
@@ -28,8 +32,17 @@
 
         
         {% include 'partials/footer.html' %}
+        {% include 'partials/messages.html' %}
+
+        {% if request.user.is_authenticated %}
+            {% include 'partials/notifications.html' %}
+        {% endif %}
+
 
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
         <script src="{% static 'js/messages.js' %}"></script>
         <script src="{% static 'js/main.js' %}"></script>
         {% block scripts %}{% endblock %}

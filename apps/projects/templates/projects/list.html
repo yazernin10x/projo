@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% load static %}
+{% load project_filters %}
 
 {% block title %} Liste des projets - ProJo {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-2 py-8 max-w-full">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-full">
     <!-- En-tête -->
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="flex items-center space-x-4 text-4xl font-black">
-            <span class="relative inline-block px-6 py-3">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+        <h1 class="flex items-center space-x-2 sm:space-x-4 text-3xl sm:text-4xl font-black">
+            <span class="relative inline-block px-4 sm:px-6 py-2 sm:py-3">
                 <span class="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 transform -skew-x-12 rounded-lg"></span>
                 <span class="relative flex items-center">
-                    <i class="fas fa-project-diagram mr-3 text-primary transition-all duration-300 hover:scale-110"></i>
-                    Liste des projets
+                    <i class="fas fa-project-diagram mr-2 sm:mr-3 text-primary transition-all duration-300 hover:scale-110"></i>
+                    <span class="text-xl sm:text-2xl">Liste des projets</span>
                 </span>
                 <span class="absolute -top-1 -right-1">
                     <i class="fas fa-sparkles text-xs text-primary/70 animate-ping"></i>
@@ -20,40 +21,162 @@
             </span>
         </h1>
         <a href="{% url 'projects:create' %}" 
-           class="btn btn-primary btn-lg shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:scale-105 group">
-            <i class="fas fa-plus text-lg mr-2 group-hover:rotate-90 transition-transform duration-300"></i>
+           class="btn btn-primary btn-md sm:btn-lg shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:scale-105 group w-full sm:w-auto">
+            <i class="fas fa-plus text-base sm:text-lg mr-2 group-hover:rotate-90 transition-transform duration-300"></i>
             <span>Nouveau projet</span>
             <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform duration-300"></i>
         </a>
     </div>
 
     <!-- Section des projets -->
-    <div class="grid gap-8 md:grid-cols-1 lg:grid-cols-1 w-full">
+    <div class="grid gap-4 sm:gap-6 lg:gap-8 md:grid-cols-1 lg:grid-cols-1 w-full">
         <!-- Liste des projets créés par moi -->
         <div class="card bg-base-200 shadow-xl w-full">
-            <div class="card-body">
-                <h2 class="card-title text-2xl mb-4">
-                    <i class="fas fa-folder-open mr-2"></i>Mes projets
+            <div class="card-body p-4 sm:p-6">
+                <h2 class="card-title text-xl sm:text-2xl mb-4">
+                    <i class="fas fa-folder-open mr-2 text-primary"></i>
+                    <span class="text-primary">Mes projets</span>
+                    <span class="badge badge-error text-white text-xs sm:text-sm">{{ page_obj.paginator.count }}</span>
                 </h2>
+                <div class="flex flex-wrap gap-2 items-center mb-4">
+                    {% with projects_all=page_obj.paginator.object_list %}
+                    <span class="badge badge-lg badge-info text-xs sm:text-sm">
+                        {{ projects_all|filter_ongoing|length }} en cours
+                    </span>
+                    <span class="badge badge-lg badge-success text-xs sm:text-sm">
+                        {{ projects_all|filter_completed|length }} terminés
+                    </span>
+                    <span class="badge badge-lg badge-warning text-xs sm:text-sm">
+                        {{ projects_all|filter_pending|length }} en attente
+                    </span>
+                    <span class="badge badge-lg badge-error text-xs sm:text-sm">
+                        {{ projects_all|filter_cancelled|length }} annulés
+                    </span>
+                    {% endwith %}
+                </div>
                 {% include "projects/partials/project_card_list.html" with 
-                    projects=projects
+                    projects=page_obj.object_list
                     is_owner=True
-                    no_projects_message="<i class='fas fa-info-circle mr-2'></i>Aucun projet n'a été créé pour le moment." 
-                %}
+                    no_projects_message="Aucun projet n'a été créé pour le moment." 
+                %} 
+
+                <!-- Pagination des projets créés -->
+                {% if page_obj.paginator.num_pages > 1 %}
+                <div class="mt-6 flex flex-col items-center gap-3">
+                    <div class="text-sm text-gray-600">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if member_page %}&member_page={{ member_page }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if member_page %}&member_page={{ member_page }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        <div class="flex gap-1">
+                            {% for num in paginator.get_elided_page_range %}
+                                {% if num == page_obj.number %}
+                                    <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                                {% else %}
+                                    <a href="?page={{ num }}{% if member_page %}&member_page={{ member_page }}{% endif %}" 
+                                       class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if member_page %}&member_page={{ member_page }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="?page={{ paginator.num_pages }}{% if member_page %}&member_page={{ member_page }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
         <!-- Liste des projets dont je suis membre -->
         <div class="card bg-base-200 shadow-xl w-full">
-            <div class="card-body">
-                <h2 class="card-title text-2xl mb-4">
-                    <i class="fas fa-users mr-2"></i>Projets partagés
+            <div class="card-body p-4 sm:p-6">
+                <h2 class="card-title text-xl sm:text-2xl mb-4">
+                    <i class="fas fa-users mr-2 text-secondary"></i>
+                    <span class="text-secondary">Projets partagés</span>
+                    <span class="badge badge-error text-white text-xs sm:text-sm">{{ page_member_projects.paginator.count }}</span>
                 </h2>
+                <div class="flex flex-wrap gap-2 items-center mb-4">
+                    {% with projects_all=page_member_projects.paginator.object_list %}
+                    <span class="badge badge-lg badge-info text-xs sm:text-sm">
+                        {{ projects_all|filter_ongoing|length }} en cours
+                    </span>
+                    <span class="badge badge-lg badge-success text-xs sm:text-sm">
+                        {{ projects_all|filter_completed|length }} terminés
+                    </span>
+                    <span class="badge badge-lg badge-warning text-xs sm:text-sm">
+                        {{ projects_all|filter_pending|length }} en attente
+                    </span>
+                    <span class="badge badge-lg badge-error text-xs sm:text-sm">
+                        {{ projects_all|filter_cancelled|length }} annulés
+                    </span>
+                    {% endwith %}
+                </div>
                 {% include "projects/partials/project_card_list.html" with 
-                    projects=member_projects 
+                    projects=page_member_projects.object_list
                     is_owner=False
-                    no_projects_message="<i class='fas fa-info-circle mr-2'></i>Vous n'êtes membre d'aucun projet pour le moment." 
+                    no_projects_message="Vous n'êtes membre d'aucun projet pour le moment." 
                 %}
+
+                <!-- Pagination des projets dont l'utilisateur est membre -->
+                {% if page_member_projects.paginator.num_pages > 1 %}
+                <div class="mt-6 flex flex-col items-center gap-3">
+                    <div class="text-sm text-gray-600">
+                        Page {{ page_member_projects.number }} sur {{ page_member_projects.paginator.num_pages }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if page_member_projects.has_previous %}
+                            <a href="?member_page=1{% if page_obj %}&page={{ page_obj.number }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?member_page={{ page_member_projects.previous_page_number }}{% if page_obj %}&page={{ page_obj.number }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        <div class="flex gap-1">
+                            {% for num in page_member_projects.paginator.get_elided_page_range %}
+                                {% if num == page_member_projects.number %}
+                                    <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                                {% else %}
+                                    <a href="?member_page={{ num }}{% if page_obj %}&page={{ page_obj.number }}{% endif %}" 
+                                       class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        {% if page_member_projects.has_next %}
+                            <a href="?member_page={{ page_member_projects.next_page_number }}{% if page_obj %}&page={{ page_obj.number }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="?member_page={{ page_member_projects.paginator.num_pages }}{% if page_obj %}&page={{ page_obj.number }}{% endif %}" 
+                               class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

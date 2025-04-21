@@ -1,21 +1,22 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load status_filters %}
-{% load role_filters %}
+{% load tasks_status_filters %}
+{% load check_user_authorized %}
+{% load project_members_role %}
 
 
 {% block title %} {{ project.title }} - ProJo {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 max-w-[1920px]">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-[1920px]">
     <!-- En-tête avec actions -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div class="flex items-center gap-4">
-            <div class="bg-info/10 p-3 rounded-xl">
-                <i class="fas fa-project-diagram text-2xl text-info"></i>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+        <div class="flex items-center gap-3 sm:gap-4">
+            <div class="bg-info/10 p-2 sm:p-3 rounded-xl">
+                <i class="fas fa-project-diagram text-xl sm:text-2xl text-info"></i>
             </div>
             <div>
-                <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70 mb-1">
                     <a href="{% url 'projects:list' %}" class="hover:text-info transition-colors text-info">
                         <i class="fas fa-folder mr-1"></i>
                         Projets
@@ -23,24 +24,38 @@
                     <i class="fas fa-chevron-right text-xs"></i>
                     <span class="text-base-content/70">Projet</span>
                 </div>
-                <h1 class="text-3xl font-bold">{{ project.title }}</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold">{{ project.title }}</h1>
+                <span id="project-status-badge" class="badge badge-info text-xs sm:text-sm">{{ project.get_status_display }}</span>
             </div>
         </div>
-        <div class="flex flex-wrap gap-3">
-            {% if project.author == user %}
+        <div class="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+            {% if user|user_authorized:project %}
+                <select id="project-status" 
+                        class="select select-bordered select-primary btn-outline hover:btn-primary h-8 sm:h-12 min-h-[2rem] sm:min-h-[3rem] w-full sm:w-auto text-sm sm:text-base" 
+                        hx-post="{% url 'projects:update_status' project.pk %}"
+                        hx-swap="none"
+                        hx-trigger="change"
+                        hx-vals='js:{"status": event.target.value}'
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                    {% for status_value, status_label in project.Status.choices %}
+                        <option value="{{ status_value }}" {% if project.status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                    {% endfor %}
+                </select>
                 <a href="{% url 'projects:update' project.id %}" 
-                   class="btn btn-warning btn-outline hover:btn-warning group">
+                   class="btn btn-warning btn-outline hover:btn-warning group btn-sm sm:btn-md">
                     <i class="fas fa-pencil-alt group-hover:rotate-12 transition-transform"></i>
                     <span class="ml-2">Modifier</span>
                 </a>
                 <button onclick="openModal({{ project.pk }}, 'project', 'delete')"
-                        class="btn btn-error btn-outline hover:btn-error group">
+                        class="btn btn-error btn-outline hover:btn-error group btn-sm sm:btn-md">
                     <i class="fas fa-trash group-hover:scale-110 transition-transform"></i>
                     <span class="ml-2">Supprimer</span>
                 </button>
             {% endif %}
             <a href="{% url 'projects:list' %}" 
-               class="btn btn-neutral hover:bg-neutral-focus group">
+               class="btn btn-neutral hover:bg-neutral-focus group btn-sm sm:btn-md">
                 <i class="fas fa-chevron-left group-hover:-translate-x-1 transition-transform"></i>
                 <span class="ml-2">Retour</span>
             </a>
@@ -51,76 +66,76 @@
     {% include "projects/partials/delete_project_modal.html" with project=project %}
 
     <!-- Informations principales du projet -->
-    <div class="grid gap-6 md:grid-cols-3">
+    <div class="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <!-- Colonne de gauche : Détails du projet et tâches -->
-        <div class="md:col-span-2 space-y-8">
+        <div class="lg:col-span-2 space-y-4 sm:space-y-8">
             <!-- Carte des détails -->
             <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
+                <div class="card-body p-4 sm:p-6">
                     <!-- Description avec support Markdown et design amélioré -->
-                    <div class="prose max-w-none mb-6">
+                    <div class="prose max-w-none mb-4 sm:mb-6">
                         <div class="bg-base-200 rounded-lg overflow-hidden">
-                            <div class="bg-base-300 p-4 border-b border-base-content/10">
-                                <h3 class="text-lg font-medium flex items-center gap-2 m-0">
+                            <div class="bg-base-300 p-3 sm:p-4 border-b border-base-content/10">
+                                <h3 class="text-base sm:text-lg font-medium flex items-center gap-2 m-0">
                                     <i class="fas fa-book"></i>
                                     Description
                                 </h3>
                             </div>
-                            <div class="p-6">
+                            <div class="p-4 sm:p-6">
                                 {% if project.description %}
-                                    <div class="markdown-content">
+                                    <div class="markdown-content text-sm sm:text-base">
                                         {{ project.description|safe }}
                                     </div>
                                 {% else %}
-                                    <p class="text-base-content/60 italic">Aucune description fournie</p>
+                                    <p class="text-base-content/60 italic text-sm sm:text-base">Aucune description fournie</p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
 
                     <!-- Statistiques avec l'ajout de l'auteur -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-success/10 p-4 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-user text-success text-xl"></i>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div class="bg-success/10 p-3 sm:p-4 rounded-lg">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <i class="fas fa-user text-success text-lg sm:text-xl"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-base-content/70">Auteur</p>
-                                    <p class="text-lg font-bold">{{ project.author.username|capfirst }}</p>
+                                    <p class="text-xs sm:text-sm font-medium text-base-content/70">Auteur</p>
+                                    <p class="text-base sm:text-lg font-bold">{{ project.author.username|capfirst }}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-primary/10 p-4 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-calendar-alt text-primary text-xl"></i>
+                        <div class="bg-primary/10 p-3 sm:p-4 rounded-lg">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <i class="fas fa-calendar-alt text-primary text-lg sm:text-xl"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-base-content/70">Date limite</p>
-                                    <p class="text-lg font-bold">{{ project.deadline|date:"d/m/Y" }}</p>
+                                    <p class="text-xs sm:text-sm font-medium text-base-content/70">Date limite</p>
+                                    <p class="text-base sm:text-lg font-bold">{{ project.deadline|date:"d/m/Y" }}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-secondary/10 p-4 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-clock text-secondary text-xl"></i>
+                        <div class="bg-secondary/10 p-3 sm:p-4 rounded-lg">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <i class="fas fa-clock text-secondary text-lg sm:text-xl"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-base-content/70">Créé le</p>
-                                    <p class="text-lg font-bold">
+                                    <p class="text-xs sm:text-sm font-medium text-base-content/70">Créé le</p>
+                                    <p class="text-base sm:text-lg font-bold">
                                         {{ project.created_at|date:"d/m/Y" }}
-                                        <span class="text-base font-medium">à {{ project.created_at|time:"H:i" }}</span>
+                                        <span class="text-sm sm:text-base font-medium">à {{ project.created_at|time:"H:i" }}</span>
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-accent/10 p-4 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-sync-alt text-accent text-xl"></i>
+                        <div class="bg-accent/10 p-3 sm:p-4 rounded-lg">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <i class="fas fa-sync-alt text-accent text-lg sm:text-xl"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-base-content/70">Dernière mise à jour</p>
-                                    <p class="text-lg font-bold">
+                                    <p class="text-xs sm:text-sm font-medium text-base-content/70">Dernière mise à jour</p>
+                                    <p class="text-base sm:text-lg font-bold">
                                         {{ project.updated_at|date:"d/m/Y" }}
-                                        <span class="text-base font-medium">à {{ project.updated_at|time:"H:i" }}</span>
+                                        <span class="text-sm sm:text-base font-medium">à {{ project.updated_at|time:"H:i" }}</span>
                                     </p>
                                 </div>
                             </div>
@@ -131,90 +146,324 @@
 
             <!-- Liste des tâches -->
             <div>
-                <div class="flex justify-between items-center mb-6">
-                    <div class="flex items-center gap-4">
-                        <h2 class="text-2xl font-bold flex items-center">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <h2 class="text-xl sm:text-2xl font-bold flex items-center">
                             <span class="bg-primary/10 p-2 rounded-lg mr-3">
                                 <i class="fas fa-tasks text-primary"></i>
                             </span>
-                             Vue des tâches
+                            Vue des tâches
                         </h2>
-                        <div class="flex gap-2 items-center">
-                            <span class="badge badge-lg badge-primary">{{ project.tasks.count }} tâches</span>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <span class="badge badge-lg badge-primary text-xs sm:text-sm">{{ project.tasks.count }} tâches</span>
                             <span class="h-6 w-px bg-base-300 mx-2"></span>
-                            {% with tasks_all=project.tasks.all %}
-                            <span class="badge badge-lg badge-warning">{{ tasks_all|filter_todo|length }} à faire</span>
-                            <span class="badge badge-lg badge-info">{{ tasks_all|filter_in_progress|length }} en cours</span>
-                            <span class="badge badge-lg badge-success">{{ tasks_all|filter_completed|length }} terminées</span>
+                            {% with tasks_all=tasks %}
+                            <span class="badge badge-lg badge-warning text-xs sm:text-sm">{{ tasks_all|filter_todo|length }} à faire</span>
+                            <span class="badge badge-lg badge-info text-xs sm:text-sm">{{ tasks_all|filter_in_progress|length }} en cours</span>
+                            <span class="badge badge-lg badge-success text-xs sm:text-sm">{{ tasks_all|filter_completed|length }} terminées</span>
                             {% endwith %}
                         </div>
                     </div>
-                    {% if project.author == user %}
-                        <a href="{% url 'tasks:create' project_pk=project.pk %}" class="btn btn-primary">
-                            <i class="fas fa-plus mr-2"></i> Nouvelle tâche
+                    {% if user|user_authorized:project %}
+                        <a href="{% url 'tasks:create' project.pk %}"
+                           class="btn btn-primary btn-sm sm:btn-md">
+                            <i class="fa-solid fa-tasks mr-2"></i>
+                            Créer une tâche
                         </a>
-                    {% endif %}
+                    {% endif %} 
                 </div>
-                
-                {% if project.tasks.all %}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {% for task in project.tasks.all %}
-                            {% if project.author == user or user in task.assigned_to.all %}
-                                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer" onclick="window.location.href='{% if project.author == user %}{% url 'tasks:detail' task.id %}{% else %}{% url 'tasks:detail-by-owner' task.id project.id %}{% endif %}'">
-                                    <div class="card-body">
-                                        <div class="flex justify-between items-start">
-                                            <h4 class="card-title">{{ task.title|truncatechars:20 }}</h4>
-                                            
-                                            {% if project.author == user %}
-                                                <div class="flex gap-2">
-                                                    <a href="{% url 'tasks:update' task.id %}" class="btn btn-ghost btn-sm btn-square">
-                                                        <i class="fas fa-edit text-warning"></i>
-                                                    </a>
-                                                    <button onclick="openModal({{ task.pk }}, 'task', 'delete')" 
-                                                            class="btn btn-ghost btn-sm btn-square">
-                                                        <i class="fas fa-trash-alt text-error"></i>
-                                                    </button>
+
+                <!-- Formulaire de filtre pour les tâches -->
+                <form method="GET" action="" class="mb-4 sm:mb-6">
+                    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+                        <select name="status" class="select select-bordered select-sm sm:select-md">
+                            <option value="">Tous les statuts</option>
+                            <option value="todo">À faire</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="completed">Terminées</option>
+                        </select>
+                        <input type="date" name="deadline" class="input input-bordered input-sm sm:input-md" placeholder="Date limite">
+                        <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Filtrer</button>
+                    </div>
+                </form>
+
+                {% if tasks %}
+                    <!-- Tâches créées par l'utilisateur -->
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <i class="fas fa-pen text-primary"></i>
+                            Mes Tâches
+                        </h3>
+                        {% if page_created_tasks.paginator.count > 0 %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                {% for task in page_created_tasks.object_list %}
+                                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer" 
+                                        onclick="window.location.href='{% url 'tasks:detail' task.id %}'">
+                                        <div class="card-body p-4 sm:p-6">
+                                            <div class="flex justify-between items-start">
+                                                <div class="space-y-1">
+                                                    <h4 class="card-title text-base sm:text-lg">{{ task.title|truncatechars:20 }}</h4>
+                                                    <p class="text-xs text-base-content/70 flex items-center gap-1">
+                                                        <i class="fas fa-user text-info"></i>
+                                                        <span>Vous</span>
+                                                    </p>
                                                 </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="divider my-0"></div> 
-                                        <div class="space-y-2">                                    
-                                            <div class="flex items-center gap-4 w-full">
-                                                <div class="flex items-center gap-2 text-sm text-base-content/70">
-                                                    <span class="badge {{ task.status|status_color }}">
-                                                        {{ task.get_status_display }}
-                                                    </span>
-                                                </div>
-                                                {% if task.assigned_to.count > 0 %} 
-                                                    <div class="flex items-center gap-2 text-sm text-base-content/70">
-                                                        <i class="fas fa-users text-primary"></i>
-                                                        <span>{{ task.assigned_to.count }} assigné(s)</span>
+                                                
+                                                {% if user|user_authorized:task %}
+                                                    <div class="flex gap-2">
+                                                        <a href="{% url 'tasks:update' task.pk %}"
+                                                           class="btn btn-ghost btn-xs sm:btn-sm btn-square">
+                                                            <i class="fas fa-edit text-warning"></i>
+                                                        </a>
+                                                        <button onclick="openModal({{ task.pk }}, 'task', 'delete')" 
+                                                                class="btn btn-ghost btn-xs sm:btn-sm btn-square">
+                                                            <i class="fas fa-trash-alt text-error"></i>
+                                                        </button>
                                                     </div>
-                                                {% endif %}
-                                                {% if task.deadline %}
-                                                <div class="flex items-center gap-2 text-sm text-base-content/70">
-                                                    <i class="fas fa-calendar text-error"></i>
-                                                    <span>Fin: {{ task.deadline|date:"d/m/Y" }}</span>
-                                                </div>
                                                 {% endif %}
                                             </div>
 
-                                            {% if task.description %}
-                                                <div class="text-sm text-base-content/70 mt-2">
-                                                    {{ task.description|truncatechars:30 }}
+                                            <div class="divider my-0"></div> 
+                                            <div class="space-y-2">                                    
+                                                <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
+                                                    <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                        <span class="badge badge-sm sm:badge-md {{ task.status|tasks_status_color }}">
+                                                            {{ task.get_status_display }}
+                                                        </span>
+                                                    </div>
+                                                    {% if task.assigned_to.count > 0 %} 
+                                                        <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                            <i class="fas fa-users text-primary"></i>
+                                                            <span>{{ task.assigned_to.count }} assigné(s)</span>
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if task.deadline %}
+                                                    <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                        <i class="fas fa-calendar text-error"></i>
+                                                        <span>Fin: {{ task.deadline|date:"d/m/Y" }}</span>
+                                                    </div>
+                                                    {% endif %}
                                                 </div>
-                                            {% endif %}
+
+                                                {% if task.description %}
+                                                    <div class="text-xs sm:text-sm text-base-content/70 mt-2">
+                                                        {{ task.description|truncatechars:30 }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
+                                    {% include "tasks/partials/delete_task_modal.html" with task=task %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- Pagination des tâches créées -->
+                            {% if page_created_tasks.paginator.num_pages > 1 %}
+                            <div class="mt-6 flex flex-col items-center gap-3">
+                                <div class="text-sm text-gray-600">
+                                    Page {{ page_created_tasks.number }} sur {{ page_created_tasks.paginator.num_pages }}
                                 </div>
-                                {% include "tasks/partials/delete_task_modal.html" with task=task %}
+                                <div class="flex items-center gap-2">
+                                    {% if page_created_tasks.has_previous %}
+                                        <a href="?created_page=1{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                        <a href="?created_page={{ page_created_tasks.previous_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <div class="flex gap-1">
+                                        {% for num in page_created_tasks.paginator.get_elided_page_range %}
+                                            {% if num == page_created_tasks.number %}
+                                                <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                                            {% else %}
+                                                <a href="?created_page={{ num }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                                   class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if page_created_tasks.has_next %}
+                                        <a href="?created_page={{ page_created_tasks.next_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                        <a href="?created_page={{ page_created_tasks.paginator.num_pages }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
                             {% endif %}
-                        {% endfor %}
+                        {% else %}
+                            <div class="card bg-base-100 shadow-xl">
+                                <div class="card-body items-center text-center p-6 sm:p-8">
+                                    <div class="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                                        <i class="fas fa-pencil-alt text-3xl text-primary"></i>
+                                    </div>
+                                    <h3 class="font-medium text-lg mb-2">Aucune tâche créée</h3>
+                                    <p class="text-sm text-base-content/60">Vous n'avez pas encore créé de tâches dans ce projet.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tâches assignées à l'utilisateur -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <i class="fas fa-user-check text-secondary"></i>
+                            Tâches qui vous sont assignées
+                        </h3>
+                        {% if page_assigned_tasks.paginator.count > 0 %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                {% for task in page_assigned_tasks.object_list %}
+                                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer" 
+                                        onclick="window.location.href='{% url 'tasks:detail' task.id %}'">
+                                        <div class="card-body p-4 sm:p-6">
+                                            <div class="flex justify-between items-start">
+                                                <div class="space-y-1">
+                                                    <h4 class="card-title text-base sm:text-lg">{{ task.title|truncatechars:20 }}</h4>
+                                                    <p class="text-xs text-base-content/70 flex items-center gap-1">
+                                                        <i class="fas fa-user text-info"></i>
+                                                        <span>{{ task.author.get_full_name|default:task.author.username }}</span>
+                                                    </p>
+                                                </div>
+                                                
+                                                {% if user|user_authorized:task %}
+                                                    <div class="flex gap-2">
+                                                        <a href="{% url 'tasks:update' task.pk %}"
+                                                           class="btn btn-ghost btn-xs sm:btn-sm btn-square">
+                                                            <i class="fas fa-edit text-warning"></i>
+                                                        </a>
+                                                        <button onclick="openModal({{ task.pk }}, 'task', 'delete')" 
+                                                                class="btn btn-ghost btn-xs sm:btn-sm btn-square">
+                                                            <i class="fas fa-trash-alt text-error"></i>
+                                                        </button>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="divider my-0"></div> 
+                                            <div class="space-y-2">                                    
+                                                <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
+                                                    <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                        <span class="badge badge-sm sm:badge-md {{ task.status|tasks_status_color }}">
+                                                            {{ task.get_status_display }}
+                                                        </span>
+                                                    </div>
+                                                    {% if task.assigned_to.count > 0 %} 
+                                                        <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                            <i class="fas fa-users text-primary"></i>
+                                                            <span>{{ task.assigned_to.count }} assigné(s)</span>
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if task.deadline %}
+                                                    <div class="flex items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                                                        <i class="fas fa-calendar text-error"></i>
+                                                        <span>Fin: {{ task.deadline|date:"d/m/Y" }}</span>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+
+                                                {% if task.description %}
+                                                    <div class="text-xs sm:text-sm text-base-content/70 mt-2">
+                                                        {{ task.description|truncatechars:30 }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% include "tasks/partials/delete_task_modal.html" with task=task %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- Pagination des tâches assignées -->
+                            {% if page_assigned_tasks.paginator.num_pages > 1 %}
+                            <div class="mt-6 flex flex-col items-center gap-3">
+                                <div class="text-sm text-gray-600">
+                                    Page {{ page_assigned_tasks.number }} sur {{ page_assigned_tasks.paginator.num_pages }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    {% if page_assigned_tasks.has_previous %}
+                                        <a href="?assigned_page=1{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                        <a href="?assigned_page={{ page_assigned_tasks.previous_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <div class="flex gap-1">
+                                        {% for num in page_assigned_tasks.paginator.get_elided_page_range %}
+                                            {% if num == page_assigned_tasks.number %}
+                                                <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                                            {% else %}
+                                                <a href="?assigned_page={{ num }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}" 
+                                                   class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if page_assigned_tasks.has_next %}
+                                        <a href="?assigned_page={{ page_assigned_tasks.next_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                        <a href="?assigned_page={{ page_assigned_tasks.paginator.num_pages }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="card bg-base-100 shadow-xl">
+                                <div class="card-body items-center text-center p-6 sm:p-8">
+                                    <div class="bg-secondary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                                        <i class="fas fa-clipboard-list text-3xl text-secondary"></i>
+                                    </div>
+                                    <h3 class="font-medium text-lg mb-2">Aucune tâche assignée</h3>
+                                    <p class="text-sm text-base-content/60">Aucune tâche ne vous a été assignée dans ce projet.</p>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="card bg-base-100 shadow-xl">
-                        <div class="card-body items-center text-center">
-                            <p>Ce projet ne contient pas encore de tâches.</p>
+                        <div class="card-body items-center text-center p-8 sm:p-12">
+                            <div class="flex flex-col items-center gap-6">
+                                <div class="relative">
+                                    <div class="bg-base-200 w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-tasks text-5xl sm:text-6xl text-base-content/30"></i>
+                                    </div>
+                                    <div class="absolute -bottom-2 -right-2 bg-warning/20 p-3 rounded-full">
+                                        <i class="fas fa-plus text-warning text-xl animate-pulse"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <h3 class="text-xl sm:text-2xl font-semibold">Aucune tâche</h3>
+                                    <p class="text-sm sm:text-base text-base-content/60 max-w-sm">
+                                        Ce projet ne contient pas encore de tâches. Commencez à en créer pour organiser votre travail.
+                                    </p>
+                                </div>
+
+                                {% if user|user_authorized:project %}
+                                    <a href="{% url 'tasks:create' project.pk %}" 
+                                       class="btn btn-primary btn-sm sm:btn-md group">
+                                        <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
+                                        <span class="ml-2">Créer une tâche</span>
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 {% endif %}
@@ -222,93 +471,120 @@
         </div>
 
         <!-- Colonne de droite : Membres du projet -->
-        <div class="flex flex-col gap-6">
-            <!-- Titre de la section membres déplacé hors de la carte -->
-            <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-4 sm:gap-6">
+            <!-- Titre de la section membres -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <h2 class="text-2xl font-bold flex items-center">
+                    <h2 class="text-xl sm:text-2xl font-bold flex items-center">
                         <span class="bg-primary/10 p-2 rounded-lg mr-3">
                             <i class="fas fa-users text-primary"></i>
                         </span>
                         Équipe
                     </h2>
-                    <span class="badge badge-primary">{{ project.members.count }} membre(s)</span>
+                    <span class="badge badge-primary text-xs sm:text-sm">{{ project.members.count }} membre(s)</span>
                 </div>
-                {% if project.author == user %}
-                    <a href="{% url 'projects:add_members' project.id %}" 
-                       class="btn btn-primary btn-sm group">
-                        <i class="fas fa-user-plus group-hover:scale-110 transition-transform"></i>
-                        <span class="ml-2">Ajouter</span>
-                    </a>
+                {% if user|user_authorized:project %}
+                    <div class="flex gap-2">
+                        <a href="{% url 'projects:manage_members' project.id %}" 
+                           class="btn btn-warning btn-sm group text-white">
+                            <i class="fas fa-user-edit group-hover:scale-110 transition-transform"></i>
+                            <span class="ml-2">Administrer</span>
+                        </a>
+                    </div>
                 {% endif %}
             </div>
 
             <div class="card bg-base-100 shadow-xl h-fit">
-                <div class="card-body">
-                    {% if project.members.all %}
-                        <div class="space-y-4">
-                            <!-- Propriétaire du projet -->
-                            <div class="flex justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/20">
-                                <div class="flex items-center gap-4">
-                                    <div class="avatar placeholder">
-                                        <div class="bg-error text-error-content rounded-full w-12 h-12 flex items-center justify-center">
-                                            <span class="text-lg font-bold">{{ project.author.username|first|upper }}</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="font-bold text-lg">{{ project.author.get_full_name|default:project.author.username|upper }}</p>
-                                            <span class="badge badge-error">Propriétaire</span>
-                                        </div>
-                                        <p class="text-sm text-base-content/70">{{ project.author.email }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
+                <div class="card-body p-4 sm:p-6">
+                    {% if page_project_members.paginator.count > 0 %}
+                        <div class="space-y-3 sm:space-y-4"> 
                             <!-- Autres membres -->
-                            {% for member in project.members.all %}
-                                {% if member != project.author %}
-                                    {% with member_role=member.member_role %}
-                                    <div class="flex justify-between items-center p-4 bg-base-200 rounded-xl hover:bg-base-300 transition-all duration-300 group">
-                                        <div class="flex items-center gap-4">
+                            {% for member in page_project_members.object_list %}
+                                {% if member != project.author %} 
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-4 bg-base-200 rounded-xl hover:bg-base-300 transition-all duration-300 group">
+                                        <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-0">
                                             <div class="avatar placeholder">
-                                                <div class="bg-{{ member_role|role_color }} text-{{ member_role|role_color }}-content rounded-full w-12 h-12 flex items-center justify-center">
-                                                    <span class="text-lg font-bold">{{ member.username|first|upper }}</span>
+                                                <div class="bg-{{ member.role|role_color }} text-{{ member.role|role_color }}-content rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                                                    <span class="text-base sm:text-lg font-bold">{{ member.username|first|upper }}</span>
                                                 </div>
                                             </div>
                                             <div>
-                                                <div class="flex items-center gap-2">
-                                                    <p class="font-bold text-{{ member_role|role_color }}">
-                                                        {{ member.get_full_name|default:member.username }}
-                                                    </p>
-                                                    <span class="badge badge-{{ member_role|role_color }}">
-                                                        {{ member_role|title }}
-                                                    </span>
-                                                </div>
-                                                <p class="text-sm text-base-content/70">{{ member.email }}</p>
+                                                <p class="font-bold text-sm sm:text-base text-{{ member.role|role_color }}">
+                                                    {{ member.get_full_name|default:member.username }}
+                                                </p>
+                                                <p class="text-xs sm:text-sm text-base-content/70">({{ member.username }})</p>
+                                                <p class="text-xs sm:text-sm text-base-content/70">{{ member.email }}</p>
                                             </div>
                                         </div>
-                                        {% if project.author == user %}
-                                            <form action="{% url 'projects:remove_members' project.id member.id %}" method="POST" class="flex">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-ghost btn-sm text-error group-hover:btn-error">
-                                                    <i class="fas fa-user-minus group-hover:rotate-12 transition-transform"></i>
-                                                    <span class="ml-2">Retirer</span>
-                                                </button>
-                                            </form>
-                                        {% endif %}
+                                        <div class="flex flex-col items-start sm:items-end">
+                                            <span class="badge badge-sm sm:badge-md badge-{{ member.role|role_color }}">
+                                                {{ member.role|get_role_display|title }}
+                                            </span>
+                                            <p class="text-xs sm:text-sm text-base-content/70 mt-1">Rejoint le: {{ member.joined_at|date:"d/m/Y" }}</p>
+                                            {% if project.author == user %}
+                                                <form action="{% url 'projects:remove_member' project.id member.id %}" method="POST" class="flex mt-2">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-ghost btn-xs sm:btn-sm text-error group-hover:btn-error">
+                                                        <i class="fas fa-user-minus group-hover:rotate-12 transition-transform"></i>
+                                                        <span class="ml-2">Retirer</span>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                    {% endwith %}
                                 {% endif %}
                             {% endfor %}
+
+                            <!-- Pagination des membres -->
+                            {% if page_project_members.paginator.num_pages > 1 %}
+                            <div class="mt-6 flex flex-col items-center gap-3">
+                                <div class="text-sm text-gray-600">
+                                    Page {{ page_project_members.number }} sur {{ page_project_members.paginator.num_pages }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    {% if page_project_members.has_previous %}
+                                        <a href="?member_page=1{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                        <a href="?member_page={{ page_project_members.previous_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <div class="flex gap-1">
+                                        {% for num in page_project_members.paginator.get_elided_page_range %}
+                                            {% if num == page_project_members.number %}
+                                                <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                                            {% else %}
+                                                <a href="?member_page={{ num }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                                   class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if page_project_members.has_next %}
+                                        <a href="?member_page={{ page_project_members.next_page_number }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                        <a href="?member_page={{ page_project_members.paginator.num_pages }}{% if status %}&status={{ status }}{% endif %}{% if deadline %}&deadline={{ deadline }}{% endif %}{% if created_page %}&created_page={{ created_page }}{% endif %}{% if assigned_page %}&assigned_page={{ assigned_page }}{% endif %}" 
+                                           class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     {% else %}
-                        <div class="text-center py-12 bg-base-200 rounded-xl">
-                            <div class="bg-base-300/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-users text-4xl text-base-content/30"></i>
+                        <div class="text-center py-8 sm:py-12 bg-base-200 rounded-xl">
+                            <div class="bg-base-300/50 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-users text-3xl sm:text-4xl text-base-content/30"></i>
                             </div>
-                            <h3 class="font-medium text-lg mb-2">Aucun membre</h3>
-                            <p class="text-base-content/50">Ce projet n'a pas encore de membres ajoutés</p>
+                            <h3 class="font-medium text-base sm:text-lg mb-2">Aucun membre</h3>
+                            <p class="text-sm sm:text-base text-base-content/50">Ce projet n'a pas encore de membres ajoutés</p>
                         </div>
                     {% endif %}
                 </div>
@@ -318,7 +594,38 @@
 </div>
 {% endblock %}
 
-
 {% block scripts %}
     <script src="{% static 'core/js/modal_utils.js' %}"></script>
+    <script>
+        // Gestion des modals
+        document.addEventListener('htmx:afterSwap', function(event) {
+            id_splited = event.target.id.split('-');
+            buttonId = `${id_splited[0]}_${id_splited[1]}_modal_${id_splited.pop()}`
+            const modal = document.getElementById(buttonId);
+            if (modal) {    
+                modal.showModal();
+            }
+        });
+
+        // Gestion de la mise à jour du statut
+        document.addEventListener('htmx:afterRequest', function(event) {
+            if (event.detail.successful && event.target.id === 'project-status') {
+                const response = JSON.parse(event.detail.xhr.response);
+                if (response.status === 'success') {
+                    const statusBadge = document.querySelector('#project-status-badge');
+                    if (statusBadge) {
+                        statusBadge.textContent = response.project_status_display;
+                        statusBadge.classList.remove('badge-warning', 'badge-info', 'badge-success', 'badge-error');
+                        const statusColorMap = {
+                            'pending': 'badge-warning',
+                            'in_progress': 'badge-info',
+                            'completed': 'badge-success',
+                            'cancelled': 'badge-error'
+                        };
+                        statusBadge.classList.add(statusColorMap[response.project_status]);
+                    }
+                }
+            }
+        });
+    </script>
 {% endblock %}

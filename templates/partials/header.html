@@ -9,6 +9,11 @@
         <!-- Liens utilisateur -->
         <div class="flex items-center space-x-8">
             {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:dashboard' %}" class="flex items-center text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                    <i class="fas fa-clipboard-list mr-2"></i>
+                    <span>Tableau de bord</span>
+                </a>
+
                 <a href="{% url 'projects:list' %}" class="flex items-center text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
                     <i class="fas fa-clipboard-list mr-2"></i>
                     <span>Projets</span>
@@ -16,32 +21,44 @@
                 
                 <!-- Notifications -->
                 <div class="dropdown dropdown-end">
-                    <label tabindex="0" class="btn btn-ghost btn-circle">
-                        <div class="indicator">
-                            <i class="fas fa-bell text-xl text-gray-700 dark:text-gray-300"></i>
+                    <a href="{% url 'notifications:list' %}" class="btn btn-ghost btn-circle">
+                        <div class="relative">
+                            <i class="fas fa-bell text-gray-600 text-2xl"></i>
                             {% if unread_notifications_count > 0 %}
-                                <span class="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-500 flex items-center justify-center text-xs font-bold text-white">
-                                    {{ unread_notifications_count }}
-                                </span>
+                            <span class="absolute top-0 right-0 inline-flex items-center justify-center w-6 h-6 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                                {% if unread_notifications_count > 99 %}
+                                   99+
+                                {% else %}
+                                    {{ unread_notifications_count }} 
+                                {% endif %}
+                            </span>     
                             {% endif %}
                         </div>
-                    </label>
-                    <ul tabindex="0" class="dropdown-content menu p-2 shadow-lg bg-white dark:bg-gray-800 rounded-box w-72 mt-4 border border-gray-200 dark:border-gray-700">
-                        <li class="menu-title">
-                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">Notifications</span>
-                        </li>
-                        <li><a href="{% url 'notifications:list' %}" class="text-sky-600 dark:text-sky-400 hover:bg-gray-100 dark:hover:bg-gray-700">Voir toutes les notifications</a></li>
-                    </ul>
+                    </a>
                 </div>
 
                 <!-- Menu déroulant utilisateur -->
                 <div class="dropdown dropdown-end">
                     <label tabindex="0" class="btn btn-ghost btn-circle avatar">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center">
-                            <i class="fas fa-user text-white text-lg"></i>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 flex items-center justify-center text-white text-lg">
+                            <div class="flex items-center justify-center h-full">
+                                {% if user.first_name and user.last_name %}
+                                    {{ user.first_name.0|upper }}{{ user.last_name.0|upper }}
+                                {% else %}
+                                    {{ user.username|slice:":2"|upper }}
+                                {% endif %}
+                            </div>
                         </div>
                     </label>
                     <ul tabindex="0" class="mt-4 dropdown-content menu menu-sm p-2 shadow-lg bg-white dark:bg-gray-800 rounded-box w-52 border border-gray-200 dark:border-gray-700 z-50">
+                        <!-- Nom d'utilisateur -->
+                        <li class="text-center font-bold text-gray-700 dark:text-gray-300">
+                            <div class="flex items-center justify-center space-x-2">
+                                {% comment %} <i class="fas fa-user-circle text-sky-600 dark:text-sky-400"></i> {% endcomment %}
+                                <span>{{ user.username|upper }}</span>
+                            </div>
+                        </li>
+                        <div class="divider my-0.5"></div>
                         <li>
                             <a href="{% url 'accounts:profile' %}" class="hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
                                 <i class="fas fa-user-circle text-gray-600 dark:text-gray-400"></i>
@@ -63,6 +80,7 @@
                         </li>
                     </ul>
                 </div>
+
             {% else %}
                 <a href="{% url 'accounts:register' %}" class="btn btn-ghost btn-sm normal-case text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     <i class="fas fa-user-plus mr-2"></i>Créer un compte

@@ -1,0 +1,51 @@
+<div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-base-100 shadow-xl rounded-2xl overflow-hidden">
+        <div class="relative">
+            <!-- Fond décoratif -->
+            <div class="absolute inset-0 bg-{{ color|default:'primary' }}/5 pattern-grid-lg"></div>
+            
+            <!-- Contenu principal -->
+            <div class="relative p-8 md:p-12 flex flex-col items-center">
+                <!-- Icône d'erreur avec animation -->
+                <div class="mb-8 relative">
+                    <div class="w-24 h-24 bg-{{ color|default:'primary' }}/20 rounded-full flex items-center justify-center animate-pulse">
+                        <i class="fas fa-{{ icon }} text-{{ color|default:'primary' }} text-4xl"></i>
+                    </div> 
+                    <!-- Cercles décoratifs -->
+                    <div class="absolute -top-2 -right-2 w-6 h-6 bg-{{ color|default:'primary' }}/20 rounded-full"></div>
+                    <div class="absolute -bottom-2 -left-2 w-4 h-4 bg-secondary/20 rounded-full"></div>
+                </div>
+
+                <!-- Texte d'erreur -->
+                <h1 class="text-8xl font-bold text-{{ color|default:'primary' }} mb-4 tracking-wider">{{ error_code }}</h1>
+                <h2 class="text-2xl font-semibold text-base-content mb-2">{{ error_title }}</h2>
+                <p class="text-base-content/70 text-center mb-8 max-w-md">
+                    {{ error_message }}
+                </p>
+
+                <!-- Boutons d'action -->
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="/" class="btn btn-{{ color|default:'primary' }} gap-2">
+                        <i class="fas fa-home"></i>
+                        Retour à l'accueil
+                    </a>
+                    <button onclick="history.back()" class="btn btn-ghost gap-2">
+                        <i class="fas fa-arrow-left"></i>
+                        Page précédente
+                    </button>
+                </div>
+
+                {% block extra_content %}{% endblock %}
+
+                <!-- Message technique -->
+                <div class="mt-8 text-sm text-base-content/50 text-center">
+                    <p>Code d'erreur: {{ error_code }} - {{ error_code_text }}</p>
+                    {% if exception %}
+                        <p class="mt-1">{{ exception }}</p>
+                    {% endif %}
+                    <p class="mt-1">{{ request.path }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

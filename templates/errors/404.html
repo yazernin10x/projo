@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Page non trouvée - ProJo{% endblock %}
+
+{% block content %}
+    {% include "errors/error_base.html" with 
+        color="warning"
+        icon="exclamation-triangle"
+        error_code="404"
+        error_title="Page non trouvée"
+        error_message="Oups! Il semble que vous ayez pris un mauvais chemin. La page que vous recherchez n'existe pas ou a été déplacée."
+        error_code_text="Not Found"
+    %}
+{% endblock %}

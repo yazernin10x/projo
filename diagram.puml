@@ -1,0 +1,57 @@
+' PlantUML 
+
+@startuml
+class User {
+    username: CharField
+    email: EmailField
+    profile_picture: ImageField
+    phone_number: PhoneNumberField
+    bio: TextField
+    created_at: DateTimeField
+    updated_at: DateTimeField
+}
+
+class Comment {
+    content: TextField
+    created_at: DateTimeField
+    updated_at: DateTimeField
+}
+
+class Notification {
+    message: TextField
+    created_at: DateTimeField
+    is_read: BooleanField
+}
+
+class Project {
+    title: CharField
+    description: TextField
+    created_at: DateTimeField
+    updated_at: DateTimeField
+    deadline: DateTimeField
+}
+
+class ProjectMember {
+    role: CharField
+    joined_at: DateTimeField
+}
+
+class Task {
+    title: CharField
+    description: TextField
+    created_at: DateTimeField
+    updated_at: DateTimeField
+    deadline: DateTimeField
+    status: CharField
+}
+
+User "1" -- "*" Comment : author
+Task "1" -- "*" Comment : task
+User "1" -- "*" Notification : users
+User "1" -- "*" Project : author
+Project "1" -- "*" Task : tasks
+Project "1" -- "*" ProjectMember : members
+User "1" -- "*" ProjectMember : user
+User "1" -- "*" Task : author
+User "*" -- "*" Task : assigned_to
+@enduml

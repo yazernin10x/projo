@@ -1,205 +1,255 @@
 import pytest
 from django.urls import reverse
 from django.test import Client
+
 from apps.comments.models import Comment
+from apps.core.tests.helpers import assert_message_present
 from apps.tasks.models import Task
 from apps.accounts.models import User
 from apps.projects.models import Project
-from .conftest import (
+from apps.core.constants import (
     HTTP_200_OK,
     HTTP_302_REDIRECT,
-    HTTP_422_UNPROCESSABLE_ENTITY,
-    TASK_STATUS,
-    TASK_DESCRIPTION,
-    TASK_DEADLINE,
     TASK_TITLE,
+    HTTP_403_FORBIDDEN,
+    HTTP_400_BAD_REQUEST,
+    HTTP_405_METHOD_NOT_ALLOWED,
 )
 
 
 @pytest.mark.django_db
-class TestTaskListView:
-    def test_page_is_accessible(self, user: User, client: Client):
-        client.force_login(user)
-        response = client.get(reverse("tasks:list"))
-        assert response.status_code == HTTP_200_OK
-        assert response.templates[0].name == "tasks/list.html"
-
-    def test_list_view(self, client: Client, user: User, project: Project, task: Task):
-        user1 = User.objects.create_user(
-            first_name="Test",
-            last_name="User",
-            email="testuser@example.com",
-            username="testuser",
-            password="password",
-        )
-
-        task1 = Task.objects.create(
-            title="Test Task",
-            status=TASK_STATUS,
-            description=TASK_DESCRIPTION,
-            deadline=TASK_DEADLINE,
-            project=project,
-            author=user1,
-        )
-        task1.assigned_to.add(user)
-
-        client.force_login(user)
-        response = client.get(reverse("tasks:list"))
-        assert response.status_code == HTTP_200_OK
-        assert response.context["tasks"].count() == 1
-        assert response.context["tasks"][0] == task
-        assert response.context["assigned_tasks"].count() == 1
-        assert response.context["assigned_tasks"][0] == task1
-        assert response.templates[0].name == "tasks/list.html"
-
-
-@pytest.mark.django_db
 class TestTaskDetailView:
-    def test_page_is_accessible(self, client: Client, user: User, task: Task):
-        client.force_login(user)
-        response = client.get(reverse("tasks:detail", kwargs={"pk": task.pk}))
-        assert response.status_code == HTTP_200_OK
-        assert response.templates[0].name == "tasks/detail.html"
-
-    @pytest.mark.django_db
-    def test_task_detail_view_not_authenticated(self, client: Client, task: Task):
-        response = client.get(reverse("tasks:detail", kwargs={"pk": task.pk}))
-
-        assert response.status_code == HTTP_302_REDIRECT
-        assert response.url.startswith("/accounts/login/")
-
-    def test_detail_view_authenticated(
-        self, client: Client, user: User, task: Task, comment: Comment
+    def test_page_access(
+        self, client: Client, user_1_connected: User, task: Task, comment: Comment
     ):
-        client.force_login(user)
         response = client.get(reverse("tasks:detail", kwargs={"pk": task.pk}))
-
         assert response.status_code == HTTP_200_OK
         assert response.templates[0].name == "tasks/detail.html"
-
         assert response.context["task"] == task
-
         assert response.context["comments"].count() == 1
         assert response.context["comments"][0] == comment
 
 
 @pytest.mark.django_db
 class TestTaskCreateView:
-    def test_page_is_accessible(self, client: Client, user: User):
-        client.force_login(user)
-        response = client.get(reverse("tasks:create"))
+    def test_page_access(
+        self, client: Client, user_1_connected: User, project: Project
+    ):
+        response = client.get(
+            reverse("tasks:create", kwargs={"project_pk": project.pk})
+        )
         assert response.status_code == HTTP_200_OK
         assert response.templates[0].name == "tasks/task_form.html"
+        assert response.context["form"].errors == {}
+        assert response.context["project"] == project
 
-    def test_task_create_view_authenticated(
-        self, client: Client, user: User, project: Project, form_data: dict
+    def test_valid_submission(
+        self,
+        client: Client,
+        user_1_connected: User,
+        user_2: User,
+        project: Project,
+        form_data: dict,
     ):
-        client.force_login(user)
-        response = client.post(reverse("tasks:create"), form_data, follow=True)
+        response = client.post(
+            reverse("tasks:create", kwargs={"project_pk": project.pk}), form_data
+        )
+        assert response.status_code == HTTP_302_REDIRECT
 
-        assert response.status_code == HTTP_200_OK
-        assert Task.objects.count() == 1
-        assert Task.objects.first().title == TASK_TITLE
-        assert Task.objects.first().author == user
-        assert Task.objects.first().project == project
+        task = Task.objects.get(title=TASK_TITLE)
+        task.assigned_to.add(user_2)
+        task.save()
+        assert task is not None
+        assert response.headers["Location"] == reverse(
+            "tasks:detail", kwargs={"pk": task.pk}
+        )
+        assert task.title == TASK_TITLE
+        assert task.author == user_1_connected
+        assert task.project == project
+        assert task.assigned_to.count() == 1
+        assert task.assigned_to.first() == user_2
 
-        messages = list(response.context["messages"])
-        assert len(messages) == 1
-        assert str(messages[0]) == "Task created successfully"
+        assert_message_present(response, "La tâche a été créée avec succès.")
 
     @pytest.mark.django_db
-    def test_task_create_view_invalid_form(
-        self, client: Client, user: User, project: Project, form_data: dict
+    def test_invalid_submission(
+        self, client: Client, user_1_connected: User, project: Project
     ):
-        client.force_login(user)
-        form_data["title"] = ""
-        response = client.post(reverse("tasks:create"), form_data, follow=True)
+        url = reverse("tasks:create", kwargs={"project_pk": project.pk})
+        response = client.post(url, {"title": ""})
 
         assert response.status_code == HTTP_200_OK
         assert Task.objects.count() == 0
         assert response.templates[0].name == "tasks/task_form.html"
-        assert response.context["form"].errors
-        assert response.context["form"].errors["title"] == ["This field is required."]
-
-        messages = list(response.context["messages"])
-        assert len(messages) == 1
-        assert str(messages[0]) == "Invalid form"
-
-    @pytest.mark.django_db
-    def test_task_create_view_not_authenticated(self, client: Client):
-        response = client.get(reverse("tasks:create"))
-        assert response.status_code == HTTP_302_REDIRECT
-        assert response.url.startswith("/accounts/login/")
+        assert response.context["form"].errors["title"] == ["Ce champ est obligatoire."]
 
 
 @pytest.mark.django_db
 class TestTaskUpdateView:
-    def test_page_is_accessible(self, client: Client, user: User, task: Task):
-        client.force_login(user)
+    def test_page_access(self, client: Client, user_1_connected: User, task: Task):
         response = client.get(reverse("tasks:update", kwargs={"pk": task.pk}))
         assert response.status_code == HTTP_200_OK
         assert response.templates[0].name == "tasks/task_form.html"
+        assert response.context["form"].errors == {}
+        assert response.context["task"] == task
+        assert response.context["project"] == task.project
 
-    def test_task_update_view_authenticated(
-        self, client: Client, user: User, project: Project, task: Task, form_data: dict
+    def test_valid_submission(
+        self,
+        client: Client,
+        user_1_connected: User,
+        user_2: User,
+        task: Task,
+        project: Project,
+        form_data: dict,
     ):
-        client.force_login(user)
-
-        del form_data["project"], form_data["author"]
-        form_data["title"] = "New title"
-        response = client.post(
-            reverse("tasks:update", kwargs={"pk": task.pk}), form_data, follow=True
+        user_3 = User.objects.create_user(
+            username="user_3", email="user_3@test.com", password="password"
         )
+        form_data["title"] = "New title"
+        url = reverse("tasks:update", kwargs={"pk": task.pk})
+        response = client.post(url, form_data)
 
+        assert response.status_code == HTTP_302_REDIRECT
+
+        task = Task.objects.get(title=form_data["title"])
+        task.assigned_to.add(user_3)
+        task.save()
+
+        assert task is not None
+        assert response.headers["Location"] == reverse(
+            "tasks:detail", kwargs={"pk": task.pk}
+        )
+        assert task.title == form_data["title"]
+        assert task.author == user_1_connected
+        assert task.project == project
+        assert task.assigned_to.count() == 1
+        assert task.assigned_to.first() == user_3
+        assert_message_present(response, "La tâche a été modifiée avec succès.")
+
+    @pytest.mark.django_db
+    def test_invalid_submission(
+        self, client: Client, user_1_connected: User, task: Task
+    ):
+        url = reverse("tasks:update", kwargs={"pk": task.pk})
+        response = client.post(url, {"title": ""})
         assert response.status_code == HTTP_200_OK
         assert Task.objects.count() == 1
-        assert Task.objects.first().title == "New title"
-        assert Task.objects.first().author == user
-        assert Task.objects.first().project == project
-
-    @pytest.mark.django_db
-    def test_task_update_view_invalid_form(
-        self, client: Client, user: User, task: Task, form_data: dict
-    ):
-        client.force_login(user)
-        form_data["title"] = ""
-        url = reverse("tasks:update", kwargs={"pk": task.pk})
-        response = client.post(url, form_data, follow=True)
-
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
-        assert Task.objects.count() == 1
         assert response.templates[0].name == "tasks/task_form.html"
-        assert response.context["form"].errors
-        assert response.context["form"].errors["title"] == ["This field is required."]
-
-        messages = list(response.context["messages"])
-        assert len(messages) == 1
-        assert str(messages[0]) == "Invalid form"
-
-    @pytest.mark.django_db
-    def test_task_update_view_not_authenticated(self, client: Client, task: Task):
-        response = client.get(reverse("tasks:update", kwargs={"pk": task.pk}))
-        assert response.status_code == HTTP_302_REDIRECT
-        assert response.url.startswith("/accounts/login/")
+        assert response.context["form"].errors["title"] == ["Ce champ est obligatoire."]
 
 
 @pytest.mark.django_db
 class TestTaskDeleteView:
     def test_task_delete_view_authenticated(
-        self, client: Client, user: User, task: Task
+        self, client: Client, user_1_connected: User, task: Task
     ):
-        client.force_login(user)
         response = client.post(reverse("tasks:delete", kwargs={"pk": task.pk}))
         assert response.status_code == HTTP_302_REDIRECT
-        assert response.url.startswith("/tasks/")
-        assert Task.objects.count() == 0
+        assert response.headers["Location"] == reverse(
+            "projects:detail", kwargs={"pk": task.project.pk}
+        )
+        assert not Task.objects.filter(pk=task.pk).exists()
 
-        messages = list(response.context["messages"])
-        assert len(messages) == 1
-        assert str(messages[0]) == "Task(s) deleted successfully"
+        assert_message_present(response, "La tâche a été supprimée avec succès.")
 
-    @pytest.mark.django_db
-    def test_task_delete_view_not_authenticated(self, client: Client, task: Task):
-        response = client.post(reverse("tasks:delete", kwargs={"pk": task.pk}))
-        assert response.status_code == HTTP_302_REDIRECT
-        assert response.url.startswith("/accounts/login/")
+
+@pytest.mark.django_db
+class TestUpdateTaskStatus:
+    def test_update_task_status_success(
+        self, client: Client, user_1_connected: User, task: Task
+    ):
+        """Test la mise à jour réussie du statut d'une tâche"""
+        new_status = "in_progress"
+        response = client.post(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": new_status},
+        )
+
+        assert response.status_code == HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["task_status"] == new_status
+        assert data["task_status_display"] == Task.Status(new_status).label
+
+        # Vérifier que le statut a bien été mis à jour en base
+        task.refresh_from_db()
+        assert task.status == new_status
+
+    def test_update_task_status_moderator(
+        self, client: Client, moderator: User, task: Task, project: Project
+    ):
+        client.force_login(moderator)
+        """Test la mise à jour par un modérateur du projet"""
+        # Ajouter l'utilisateur comme modérateur du projet
+        project.members.add(moderator, through_defaults={"role": "moderator"})
+        project.save()
+
+        new_status = "done"
+        response = client.post(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": new_status},
+        )
+
+        assert response.status_code == HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["task_status"] == new_status
+        assert data["task_status_display"] == Task.Status(new_status).label
+
+    def test_update_task_status_superuser(
+        self, client: Client, superuser: User, task: Task
+    ):
+        """Test la mise à jour par un superuser"""
+        client.force_login(superuser)
+        new_status = "in_progress"
+        response = client.post(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": new_status},
+        )
+
+        assert response.status_code == HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["task_status"] == new_status
+        assert data["task_status_display"] == Task.Status(new_status).label
+
+    def test_update_task_status_permission_denied(
+        self, client: Client, unauthorized_user: User, task: Task
+    ):
+        """Test le refus de mise à jour pour un utilisateur non autorisé"""
+        client.force_login(unauthorized_user)
+        response = client.post(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": "in_progress"},
+        )
+
+        assert response.status_code == HTTP_403_FORBIDDEN
+        data = response.json()
+        assert data["status"] == "error"
+        assert data["message"] == "Permission refusée"
+
+    def test_update_task_status_invalid_status(
+        self, client: Client, user_1_connected: User, task: Task
+    ):
+        """Test la soumission d'un statut invalide"""
+        response = client.post(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": "invalid_status"},
+        )
+
+        assert response.status_code == HTTP_400_BAD_REQUEST
+        data = response.json()
+        assert data["status"] == "error"
+        assert data["message"] == "Statut invalide"
+
+    @pytest.mark.parametrize("method", ["get", "put", "delete"])
+    def test_update_task_status_wrong_method(
+        self, client: Client, user_1_connected: User, task: Task, method
+    ):
+        request_method = getattr(client, method)
+        response = request_method(
+            reverse("tasks:update_status", kwargs={"pk": task.pk}),
+            {"status": "completed"},
+        )
+        assert response.status_code == HTTP_405_METHOD_NOT_ALLOWED

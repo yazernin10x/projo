@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,63 +21,110 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o0+)i#gjtz2784oa0n*bo*m21yr^ud75qa^yu17bo^#2vzr9hs'
+SECRET_KEY = "django-insecure-o0+)i#gjtz2784oa0n*bo*m21yr^ud75qa^yu17bo^#2vzr9hs"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost"]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "daphne",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # Apps
+    "apps.accounts",
+    "apps.projects",
+    "apps.api",
+    "apps.core",
+    "apps.tasks",
+    "apps.comments",
+    "apps.dashboard",
+    "apps.notifications",
+    # Third party apps
+    "rest_framework",
+    "drf_yasg",
+    "rest_framework_simplejwt",
+    "phonenumber_field",
+    "tailwind",
+    "theme",
+    "django_browser_reload",
+    "widget_tweaks",
+    "channels",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_browser_reload.middleware.BrowserReloadMiddleware",
+    # Custom middleware
+    "apps.core.middleware.ThreadLocalMiddleware",
+    "apps.api.middleware.APILogMiddleware",
 ]
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = "core.urls"
 
+# django.template.backends.django.DjangoTemplates
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "apps.core.template_backend.MultiLineTemplateEngine",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                # Custom context processors
+                "apps.core.context_processors.unread_notifications_count",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"
+
+# Channels settings
+# Par défaut, Django utilise un canal en mémoire, mais pour
+# un environnement de production, utilisez Redis: pip install channels_redis
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Pour le développement
+    },
+}
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [
+#                 ("127.0.0.1", 6379)
+#             ],  # Assurez-vous que Redis est bien installé et en cours d'exécution
+#         },
+#     },
+# }
 
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -86,16 +134,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -103,21 +151,115 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "fr-fr"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
 USE_TZ = True
 
+LANGUAGES = [
+    ("fr", "Français"),
+    ("en", "English"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",  # Dossier où seront stockés les fichiers de traduction
+]
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "theme/static", BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files (uploads)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# User model has been customized had used if not, it would be "auth.User"
+AUTH_USER_MODEL = "accounts.User"
+
+# Login settings
+LOGIN_URL = (
+    "/accounts/login/"  # Rediriger les utilisateurs non connectés vers cette URL
+)
+LOGIN_REDIRECT_URL = "/dashboard/"  # Rediriger vers le dashboard après la connexion
+LOGOUT_REDIRECT_URL = "/"  # Rediriger vers la page d'accueil après la déconnexion
+
+# Email settings
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "yazernin10x@gmail.com"
+EMAIL_HOST_PASSWORD = "joxf cdmd dgym euzb"
+
+# Tailwind settings
+TAILWIND_APP_NAME = "theme"
+TAILWIND_CSS_PATH = "css/dist/styles.css"
+NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+INTERNAL_IPS = ["127.0.0.1"]
+
+# Password reset settings
+PASSWORD_RESET_TIMEOUT = 60 * 10  # 10 minutes en secondes
+
+# Custom settings
+PROJO_NAME = "Projo"
+SITE_URL = "https://projo.com"
+
+# API settings
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.BasicAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",  # Pour JWT
+        "apps.api.authentication.APIKeyAuthentication",  # Pour API Key
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+}
+
+# Configuration Swagger/OpenAPI
+# Mise à jour de la configuration Swagger
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+        "ApiKey": {"type": "apiKey", "name": "X-API-Key", "in": "header"},
+    },
+    "USE_SESSION_AUTH": False,
+    "PERSIST_AUTH": True,
+    "REFETCH_SCHEMA_WITH_AUTH": True,
+    "REFETCH_SCHEMA_ON_LOGOUT": True,
+}
+
+# Configuration JWT
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),  # Durée de vie du token d'accès
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=1
+    ),  # Durée de vie du token de rafraîchissement
+    # "ROTATE_REFRESH_TOKENS": True,
+    # "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}

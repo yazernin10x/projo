@@ -2,79 +2,216 @@
 {% load static %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Notifications</h1>
-        
-        
-        {% if notifications.count > 0 %}
-        <div class="flex gap-2">
-            <a href="{% url 'notifications:mark_all_as_read' %}" class="btn btn-outline btn-sm">
-                Tout marquer comme lu
-            </a>
-            
-            <a href="{% url 'notifications:mark_all_as_unread' %}" class="btn btn-outline btn-sm">
-                Tout marquer comme non lu
-            </a>
+<div class="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
+    <!-- En-tête avec statistiques et actions -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div class="flex flex-col gap-6">
+            <!-- Titre et stats -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-primary">
+                    Notifications
+                </h1>
 
-            <form action="{% url 'notifications:delete_all' %}" method="POST" class="inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-error btn-sm">
-                    Supprimer tout
-                </button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
-
-    {% if notifications %}
-        <div class="space-y-4">
-            {% for notification in notifications %}
-                <div class="card bg-base-100 shadow-xl {% if not notification.is_read %}border-l-4 border-primary{% endif %}">
-                    <div class="card-body">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <p class="text-lg">{{ notification.content|linebreaks }}</p>
-                                <p class="text-sm text-gray-500">{{ notification.created_at|timesince }}</p>
-                            </div>
-                            
-                            <div class="flex gap-2">
-                                {% if notification.is_read %}
-                                    <a href="{% url 'notifications:mark_as_unread' pk=notification.pk %}" class="btn btn-ghost btn-sm">
-                                        Marquer comme non lu
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'notifications:mark_as_read' pk=notification.pk %}" class="btn btn-ghost btn-sm">
-                                        Marquer comme lu
-                                    </a>
-                                {% endif %}
-                                
-                                <form action="{% url 'notifications:delete' pk=notification.pk %}" method="POST" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-ghost btn-sm text-error">
-                                        Supprimer
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                <!-- Stats en ligne -->
+                <div class="flex divide-x divide-gray-200">
+                    <div class="px-4 first:pl-0">
+                        <span class="block text-sm text-neutral-500">Total</span>
+                        <span class="text-xl font-semibold text-neutral-900">{{ paginator.count }}</span>
+                    </div>
+                    <div class="px-4">
+                        <span class="block text-sm text-blue-500">Non lues</span>
+                        <span class="text-xl font-semibold text-blue-600">{{ unread_notifications.count }}</span>
+                    </div>
+                    <div class="px-4 last:pr-0">
+                        <span class="block text-sm text-green-500">Lues</span>
+                        <span class="text-xl font-semibold text-green-600">{{ read_notifications.count }}</span>
                     </div>
                 </div>
-            {% endfor %}
+            </div>
+
+            <!-- Actions -->
+            {% if paginator.count > 0 %}
+            <div class="flex flex-col sm:flex-row gap-2 justify-end">
+                <div class="flex flex-wrap gap-2 justify-end">
+                    <button onclick="openModal({{ read_notifications.count }}, 'notification', 'mark_all_as_read')" 
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md 
+                            shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-green-50 focus:outline-none 
+                            focus:ring-2 focus:ring-offset-2 focus:ring-primary whitespace-nowrap">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Marquer tout comme lu
+                    </button>
+                    {% include "notifications/partials/mark_all_confirm_modal.html" with 
+                        action_to_confirm="mark_all_as_read" 
+                        id=read_notifications.count 
+                    %}
+
+                    <button onclick="openModal({{ unread_notifications.count }}, 'notification', 'mark_all_as_unread')" 
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md 
+                            shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 
+                            focus:ring-offset-2 focus:ring-primary whitespace-nowrap">
+                        <i class="fas fa-envelope-open text-blue-500 mr-2"></i>
+                        Marquer tout comme non lu
+                    </button>
+                    {% include "notifications/partials/mark_all_confirm_modal.html" with 
+                        action_to_confirm="mark_all_as_unread" 
+                        id=unread_notifications.count 
+                    %}
+
+                    <button onclick="openModal('xx', 'notifications', 'delete_all')"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md 
+                            shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none 
+                            focus:ring-2 focus:ring-offset-2 focus:ring-red-500 whitespace-nowrap">
+                        <i class="fas fa-trash-alt mr-2"></i>
+                        Supprimer tout
+                    </button>
+                    {% include "notifications/partials/delete_all_confirm_modal.html" %}
+                </div>
+            </div>
+            {% endif %}
         </div>
+    </div>
+
+    <!-- Formulaire de filtrage -->
+    <form method="GET" action="" class="mb-4">
+        <div class="flex flex-col sm:flex-row gap-2 justify-start">
+            <div class="flex flex-wrap gap-2">
+                <select name="status" class="select select-bordered whitespace-nowrap">
+                    <option value="">Tous</option>
+                    <option value="unread">Non lues</option>
+                    <option value="read">Lues</option>
+                </select>
+                <select name="sender" class="select select-bordered whitespace-nowrap">
+                    <option value="">Tous les expéditeurs</option>
+                    {% for sender in senders %}
+                    <option value="{{ sender }}">{{ sender }}</option>
+                    {% endfor %}
+                </select>
+                <select name="date" class="select select-bordered whitespace-nowrap">
+                    <option value="">Toutes les dates</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="this_week">Cette semaine</option>
+                    <option value="this_month">Ce mois-ci</option>
+                </select>
+                <button type="submit" class="btn btn-primary whitespace-nowrap">Filtrer</button>
+            </div>
+        </div>
+    </form>
+
+    {% if notifications %}
+        {% if paginator.count > 0 %}
+        <div class="mb-6 sm:mb-8">
+            <h2 class="text-base sm:text-lg md:text-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg shadow-md p-2 sm:p-3 mb-3 sm:mb-4">
+                <i class="fas fa-bell mr-2"></i> Non lues
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {% for notification in page_obj.object_list %}
+                        <div class="card bg-base-100 shadow-xl {% if notification.is_read %}bg-gray-100{% else %}border-l-4 border-primary bg-blue-50{% endif %}">
+                            <div class="card-body p-3 sm:p-4">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-2 sm:space-y-0 mb-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
+                                        <div class="flex items-center text-xs text-blue-600">
+                                            <i class="fas fa-user mr-1"></i>
+                                            <span>De: <span class="font-medium text-blue-800">{{ notification.sender }}</span></span>
+                                        </div>
+                                        <div class="flex items-center text-xs text-green-600">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            <span>{{ notification.created_at|timesince }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex gap-2 items-center">
+                                        {% with title=notification.is_read|yesno:"Marquer comme non lu,Marquer comme lu" %}
+                                            <div class="tooltip" data-tip="{{ title }}">
+                                            {% if notification.is_read %}
+                                                <form action="{% url 'notifications:mark_as_unread' pk=notification.pk %}" method="POST" class="inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-ghost btn-xs p-1 text-gray-500">
+                                                        <i class="fas fa-envelope-open"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form action="{% url 'notifications:mark_as_read' pk=notification.pk %}" method="POST" class="inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-ghost btn-xs p-1 text-blue-500">
+                                                        <i class="fas fa-envelope"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            </div>
+                                        {% endwith %}
+                                        
+                                        <form action="{% url 'notifications:delete' pk=notification.pk %}" method="POST" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-ghost btn-xs text-error tooltip p-1" data-tip="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm sm:text-base font-bold text-gray-900 mb-2">{{ notification.title }}</h3>
+                                    <p class="text-sm sm:text-base font-semibold text-justify">{{ notification.content|linebreaks }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination des notifications non lues -->
+            {% if   paginator.num_pages > 1 %}
+            <div class="mt-6 flex flex-col items-center gap-3">
+                <div class="text-sm text-gray-600">
+                    Page {{ page_obj.number }} sur {{ paginator.num_pages }}
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sender %}&sender={{ request.GET.sender }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" 
+                           class="btn btn-circle btn-sm btn-ghost" title="Première page">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ notifications.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sender %}&sender={{ request.GET.sender }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" 
+                           class="btn btn-circle btn-sm btn-ghost" title="Page précédente">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <div class="flex gap-1">
+                        {% for num in paginator.get_elided_page_range %}
+                            {% if num == page_obj.number %}
+                                <button class="btn btn-circle btn-sm btn-primary">{{ num }}</button>
+                            {% else %}
+                                <a href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sender %}&sender={{ request.GET.sender }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" 
+                                   class="btn btn-circle btn-sm btn-ghost">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sender %}&sender={{ request.GET.sender }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" 
+                           class="btn btn-circle btn-sm btn-ghost" title="Page suivante">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        <a href="?page={{ paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sender %}&sender={{ request.GET.sender }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" 
+                           class="btn btn-circle btn-sm btn-ghost" title="Dernière page">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     {% else %}
-        <div class="text-center py-8">
-            <p class="text-gray-500">Aucune notification</p>
+        <div class="flex flex-col items-center py-8 sm:py-12">
+            <i class="fas fa-bell-slash text-3xl sm:text-4xl md:text-5xl text-gray-400 mb-3 sm:mb-4"></i>
+            <p class="text-base sm:text-lg md:text-xl text-gray-500 text-center">Vous n'avez aucune notification pour le moment.</p>
+            <p class="text-sm sm:text-base text-gray-400 text-center mt-2">Revenez plus tard pour voir les mises à jour.</p>
         </div>
     {% endif %}
 </div>
+{% endblock %}
 
-{% if messages %}
-<div class="toast toast-end">
-    {% for message in messages %}
-        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% else %}alert-info{% endif %}">
-            <span>{{ message }}</span>
-        </div>
-    {% endfor %}
-</div>
-{% endif %}
+{% block scripts %}
+<script src="{% static 'core/js/modal_utils.js' %}"></script>
 {% endblock %}

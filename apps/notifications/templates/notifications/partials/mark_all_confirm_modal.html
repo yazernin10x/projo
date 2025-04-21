@@ -1,0 +1,58 @@
+<dialog id="{{ action_to_confirm }}_notification_modal_{{ id }}" class="modal modal-bottom sm:modal-middle w-[95%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] max-w-full sm:max-w-2xl mx-auto">
+    <div class="modal-box w-full bg-base-200 p-3 sm:p-4 md:p-6 flex flex-col items-center">
+        <form method="dialog" class="w-full">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <div class="text-center space-y-2 sm:space-y-3 md:space-y-4 mb-3 sm:mb-4 w-full">
+            <i class="fa-solid fa-triangle-exclamation text-2xl sm:text-3xl md:text-4xl text-error animate-pulse"></i>
+            <h2 class="text-base sm:text-lg md:text-xl font-bold">Confirmer l'action</h2>
+        </div>
+
+        <div class="card bg-base-100 shadow-2xl w-full">
+            <div class="card-body p-2 sm:p-3 md:p-4">
+                <div class="alert alert-error shadow-lg my-1 sm:my-2 md:my-4 text-white">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div class="w-full">
+                        <h3 class="font-bold text-xs sm:text-sm md:text-base">Attention !</h3>
+                        <p class="text-xs sm:text-sm md:text-base">
+                            {% if action_to_confirm == "mark_all_as_read" %}
+                                Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ? Cette action est irréversible.
+                            {% elif action_to_confirm == "mark_all_as_unread" %}
+                                Êtes-vous sûr de vouloir marquer toutes les notifications comme non lues ? Cette action est irréversible.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 mt-3 sm:mt-4 w-full">
+                    <button onclick="closeModal({{ id }}, 'notification', '{{ action_to_confirm }}')" class="btn btn-success text-white btn-sm w-full sm:w-auto">
+                        <i class="fa-solid fa-xmark mr-2 text-sm"></i>
+                        <span class="text-sm">Annuler</span>
+                    </button>
+
+                    {% if action_to_confirm == "mark_all_as_read" %}
+                        <form action="{% url 'notifications:mark_all_as_read' %}" method="post" class="w-full sm:w-auto">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-error hover:bg-red-600 transition-colors text-white btn-sm w-full">
+                                <i class="fa-solid fa-check mr-2 text-sm"></i>
+                                <span class="text-sm">Confirmer</span>
+                            </button>
+                        </form>
+                    {% elif action_to_confirm == "mark_all_as_unread" %}
+                        <form action="{% url 'notifications:mark_all_as_unread' %}" method="post" class="w-full sm:w-auto">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-error hover:bg-red-600 transition-colors text-white btn-sm w-full">
+                                <i class="fa-solid fa-check mr-2 text-sm"></i>
+                                <span class="text-sm">Confirmer</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
