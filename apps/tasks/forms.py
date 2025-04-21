@@ -3,7 +3,7 @@ from .models import Task
 from apps.accounts.models import User
 
 
-class TaskCreateForm(forms.ModelForm):
+class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = [
@@ -16,14 +16,21 @@ class TaskCreateForm(forms.ModelForm):
         widgets = {
             "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "status": forms.Select(choices=Task.Status.choices),
-            "assigned_to": forms.CheckboxSelectMultiple(),
+            "assigned_to": forms.SelectMultiple(),
         }
 
-    def __init__(self, *args, **kwargs):
+    # supprimer les user deja ajouter
+
+    def __init__(self, *args, user=None, project=None, **kwargs):
+        self.user = user
+        self.project = project
         super().__init__(*args, **kwargs)
-        self.fields["assigned_to"].queryset = User.objects.filter(is_active=True)
-
-
-class TaskUpdateForm(TaskCreateForm):
-    class Meta(TaskCreateForm.Meta):
-        pass
+        if user and project:
+            users = User.objects.exclude(pk=user.pk).exclude(is_superuser=True)
+            users_pks = [
+                user.pk for user in users if user in self.project.members.all()
+            ]
+            self.fields["assigned_to"].queryset = User.objects.filter(pk__in=users_pks)
+            self.fields["assigned_to"].label_from_instance = (
+                lambda user: user.get_full_name() or user.username
+            )

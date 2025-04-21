@@ -8,25 +8,20 @@ from django.contrib.auth.views import (
     PasswordResetCompleteView,
 )
 
-from .views import (
-    ProjoLoginView,
-    ProjoLogoutView,
-    UserRegisterView,
-    ProfileUpdateView,
-    UserDeleteView,
-)
+from . import views
 
 
 app_name = "accounts"
 
 urlpatterns = [
-    path("profile/", ProfileUpdateView.as_view(), name="profile"),
-    path("register/", UserRegisterView.as_view(), name="register"),
-    path("<int:pk>/delete/", UserDeleteView.as_view(), name="delete"),
-    path("login/", ProjoLoginView.as_view(), name="login"),
-    path("logout/", ProjoLogoutView.as_view(), name="logout"),
+    path("profile/", views.ProfileUpdateView.as_view(), name="profile"),
+    path("register/", views.UserRegisterView.as_view(), name="register"),
+    path("<int:pk>/delete/", views.UserDeleteView.as_view(), name="delete"),
+    path("login/", views.AccountLoginView.as_view(), name="login"),
+    path("logout/", views.AccountLogoutView.as_view(), name="logout"),
 ]
 
+# Password change
 urlpatterns += [
     path(
         "password_change/",
@@ -45,6 +40,7 @@ urlpatterns += [
     ),
 ]
 
+# Password reset
 urlpatterns += [
     path(
         "password_reset/",

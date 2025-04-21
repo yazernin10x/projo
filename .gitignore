@@ -1,0 +1,32 @@
+# Byte-compiled
+__pycache__/
+
+# ruff
+.ruff_cache/
+
+# Static type checkers
+.mypy_cache/
+
+
+# Unit test / coverage reports
+.tox
+.htmlcov/
+.coverage*
+.pytest_cache/
+
+# IDE
+.vscode/
+
+# Database
+
+
+# Secret
+.env
+
+# log
+# logs/
+
+# Migrations
+apps/*/migrations/
+
+

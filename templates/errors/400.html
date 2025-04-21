@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Requête Invalide - ProJo{% endblock %}
+
+{% block content %}
+    {% include "errors/error_base.html" with 
+        color="warning"
+        icon="exclamation-circle"
+        error_code="400"
+        error_title="Requête Invalide"
+        error_message="Désolé! La requête envoyée au serveur n'est pas valide. Veuillez vérifier les informations saisies et réessayer."
+        error_code_text="Bad Request"
+    %}
+{% endblock %}
+
+{% block extra_content %}
+    <!-- Section d'aide -->
+    <div class="divider mt-8">Besoin d'aide ?</div>
+    <div class="flex gap-4 text-base-content/70">
+        <a href="/contact" class="hover:text-warning transition-colors">
+            <i class="fas fa-envelope mr-2"></i>Contact
+        </a>
+        <a href="/help" class="hover:text-warning transition-colors">
+            <i class="fas fa-question-circle mr-2"></i>Aide
+        </a>
+    </div>
+{% endblock %}

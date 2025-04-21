@@ -14,6 +14,12 @@ dependencies = [
     "django-phonenumber-field[phonenumbers] (>=8.0.0,<9.0.0)",
     "django-tailwind[reload] (>=3.8.0,<4.0.0)",
     "django-widget-tweaks (>=1.5.0,<2.0.0)",
+    "channels (>=4.2.0,<5.0.0)",
+    "daphne (>=4.1.2,<5.0.0)",
+    "twisted[http2,tls] (>=24.11.0,<25.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "drf-yasg (>=1.21.9,<2.0.0)",
+    "djangorestframework-simplejwt (>=5.5.0,<6.0.0)",
 ]   
 
 [build-system]
@@ -23,7 +29,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.group.dev.dependencies]
 django-stubs = "^5.1.3"
 djangorestframework-stubs = "^3.15.2"
-pytest = "^8.3.4"
 faker = "^36.1.1"
 
 [tool.poetry.group.test.dependencies]
@@ -32,5 +37,16 @@ pytest-django = "^4.10.0"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
-# python_files = ["tests.py", "test_*.py", "*_tests.py"]
-addopts = "-v -s" # --reuse-db 
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-v -s" # --reuse-db
+testpaths = ["apps"]
+pythonpath = ["core"]
+filterwarnings = [
+    "ignore:.*'maxsplit' is passed as positional argument.*:DeprecationWarning",
+    "ignore::DeprecationWarning:widget_tweaks.*",
+    "ignore::RuntimeWarning:django.db.models.fields",
+]
+
+# [tool.npm.scripts]
+# build = "tailwindcss -i theme/static_src/src/styles.css -o static/css/dist/styles.css --minify"
+# dev = "tailwindcss -i theme/static_src/src/styles.css -o static/css/dist/styles.css --watch"

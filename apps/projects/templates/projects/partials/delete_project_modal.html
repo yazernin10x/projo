@@ -1,22 +1,22 @@
 <!-- Modal de suppression -->
 <dialog id="delete_project_modal_{{ project.pk }}" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box max-w-l bg-base-200">
+    <div class="modal-box max-w-lg sm:max-w-xl bg-base-200">
         <form method="dialog">
             <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
         </form>
         <!-- Icône et titre -->
-        <div class="text-center space-y-4 mb-4">
-            <i class="fa-solid fa-triangle-exclamation text-4xl text-error animate-pulse"></i>
-            <h2 class="text-xl font-bold">Confirmer la suppression</h2>
+        <div class="text-center space-y-2 sm:space-y-4 mb-2 sm:mb-4">
+            <i class="fa-solid fa-triangle-exclamation text-3xl sm:text-4xl text-error animate-pulse"></i>
+            <h2 class="text-lg sm:text-xl font-bold">Confirmer la suppression</h2>
         </div>
 
         <div class="card bg-base-100 shadow-2xl">
-            <div class="card-body p-4">
+            <div class="card-body p-2 sm:p-4">
                 <!-- Message d'avertissement -->
-                <div class="alert alert-error shadow-lg my-4 text-white">
+                <div class="alert alert-error shadow-lg my-2 sm:my-4 text-white">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     <div>
-                        <h3 class="font-bold text-sm">Attention !</h3>
+                        <h3 class="font-bold text-xs sm:text-sm">Attention !</h3>
                         <p class="text-xs">
                             Êtes-vous sûr de vouloir supprimer le projet "<span class='font-semibold'>{{ project.title }}</span>" ?
                             Cette action est irréversible.
@@ -25,57 +25,57 @@
                 </div>
 
                 <!-- Détails du projet -->
-                <div class="bg-base-200 rounded-box p-4 space-y-2">
-                    <h3 class="text-base font-semibold mb-2 flex items-center gap-2">
+                <div class="bg-base-200 rounded-box p-2 sm:p-4 space-y-1 sm:space-y-2">
+                    <h3 class="text-sm sm:text-base font-semibold mb-2 flex items-center gap-2">
                         <i class="fa-solid fa-circle-info"></i>
                         Informations du projet
                     </h3>
                     
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex items-center gap-2 col-span-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
                             <i class="fa-solid fa-heading text-primary"></i>
-                            <span class="font-medium">Titre :</span>
-                            <span>{{ project.title }}</span>
+                            <span class="font-medium text-sm sm:text-base">Titre :</span>
+                            <span class="text-sm sm:text-base">{{ project.title }}</span>
                         </div>
                         
                         {% if project.description %}
-                        <div class="flex items-center gap-2 col-span-2">
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
                             <i class="fa-solid fa-align-left text-primary"></i>
-                            <span class="font-medium">Description :</span>
-                            {{ project.description|truncatechars:30 }}
+                            <span class="font-medium text-sm sm:text-base">Description :</span>
+                            <span class="text-sm sm:text-base">{{ project.description|truncatechars:30 }}</span>
                         </div>
                         {% endif %}
                         
-                        <div class="flex items-center gap-2 col-span-2">
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
                             <i class="fa-solid fa-calendar text-primary"></i>
-                            <span class="font-medium">Créé le :</span>
-                            {{ project.created_at|date:"d/m/Y" }}
+                            <span class="font-medium text-sm sm:text-base">Créé le :</span>
+                            <span class="text-sm sm:text-base">{{ project.created_at|date:"d/m/Y" }}</span>
                         </div>
                         
-                        <div class="flex items-center gap-2 col-span-2">
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
                             <i class="fa-solid fa-tasks text-primary"></i>
-                            <span class="font-medium">Tâches :</span>
-                            {{ project.tasks.count }}
+                            <span class="font-medium text-sm sm:text-base">Tâches :</span>
+                            <span class="text-sm sm:text-base">{{ project.tasks.count }}</span>
                         </div>
                         
-                        <div class="flex items-center gap-2 col-span-2">
+                        <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
                             <i class="fa-solid fa-users text-primary"></i>
-                            <span class="font-medium">Membres :</span>
-                            {{ project.members.count }}
+                            <span class="font-medium text-sm sm:text-base">Membres :</span>
+                            <span class="text-sm sm:text-base">{{ project.members.count }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex justify-end gap-3 mt-4">
-                    <button onclick="closeModal({{ project.pk }}, 'project', 'delete')" class="btn btn-success text-white btn-sm">
+                <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4">
+                    <button onclick="closeModal({{ project.pk }}, 'project', 'delete')" class="btn btn-success text-white btn-sm w-full sm:w-auto">
                         <i class="fa-solid fa-xmark mr-2 text-sm"></i>
                         <span class="text-sm">Annuler</span>
                     </button>
-                    <form method="post" class="inline" action="{% url 'projects:delete' project.id %}" >
+                    <form method="post" class="inline w-full sm:w-auto" action="{% url 'projects:delete' project.id %}" >
                         {% csrf_token %}
                         <button type="submit" 
-                                class="btn btn-error hover:bg-red-600 transition-colors text-white btn-sm">
+                                class="btn btn-error hover:bg-red-600 transition-colors text-white btn-sm w-full sm:w-auto">
                             <i class="fa-solid fa-trash-alt mr-2 text-sm"></i>
                             <span class="text-sm">Supprimer</span>
                         </button>

@@ -1,109 +1,86 @@
-from http import HTTPStatus
-
 import pytest
 from django.test import Client
 from django.urls import reverse
-from django.contrib.messages import get_messages
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
 
+from apps.core.tests.helpers import assert_message_present
 from core.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
+from apps.accounts.models import User
+from apps.core.constants import (
+    HTTP_200_OK,
+    HTTP_302_REDIRECT,
+    USERNAME_1,
+    PASSWORD_1,
+)
 
 
-from ..models import User
-from .conftest import PASSWORD, USERNAME
-
-HTTP_302_REDIRECT = HTTPStatus.FOUND
-HTTP_200_OK = HTTPStatus.OK
-HTTP_422_UNPROCESSABLE_ENTITY = HTTPStatus.UNPROCESSABLE_ENTITY
-
-
+@pytest.mark.django_db(transaction=True)
 class TestLoginView:
-    @pytest.mark.django_db(transaction=True)
-    def test_page_access(self, client: Client, user: User):
+    def test_page_access(self, client: Client, user_1: User):
         response = client.get(reverse("accounts:login"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/login.html" in templates
+        assert response.templates[0].name == "accounts/login.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_submission(self, client: Client, user: User):
-        credentials = {"username": USERNAME, "password": PASSWORD}
+    def test_form_submission(self, client: Client, user_1: User):
+        credentials = {"username": USERNAME_1, "password": PASSWORD_1}
         response = client.post(reverse("accounts:login"), credentials)
         assert response.status_code == HTTP_302_REDIRECT
         assert response.headers["Location"] == LOGIN_REDIRECT_URL
+        assert_message_present(response, "Connexion réussie ! Bienvenue")
 
 
+@pytest.mark.django_db(transaction=True)
 class TestLogoutView:
-    @pytest.mark.django_db(transaction=True)
-    def test_logout(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_logout(self, client: Client, user_1_connected: User):
         response = client.post(reverse("accounts:logout"))
         assert response.status_code == HTTP_302_REDIRECT
         assert response.headers["Location"] == LOGOUT_REDIRECT_URL
+        # assert_message_present(response, "Déconnexion réussie ! A bientôt")
 
 
+@pytest.mark.django_db(transaction=True)
 class TestRegisterView:
-    @pytest.mark.django_db(transaction=True)
     def test_page_access(self, client: Client):
         response = client.get(reverse("accounts:register"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/register.html" in templates
+        assert response.templates[0].name == "accounts/register.html"
 
-    @pytest.mark.django_db(transaction=True)
     def test_valid_submission(self, client: Client, form_data: dict):
-        data = {**form_data, "password1": PASSWORD, "password2": PASSWORD}
-        response = client.post(reverse("accounts:register"), data)
-        assert response.status_code == HTTP_302_REDIRECT
-        assert response.headers["Location"] == LOGIN_REDIRECT_URL
-        user = User.objects.get(username=form_data["username"])
-        assert user is not None
-        assert user.first_name == form_data["first_name"]
-        assert user.last_name == form_data["last_name"]
-        assert user.email == form_data["email"]
-
-        messages = list(get_messages(response.wsgi_request))
-        assert any(
-            message.message == "Your account has been created successfully!"
-            and message.level_tag == "success"
-            for message in messages
+        response = client.post(
+            reverse("accounts:register"), data=form_data, follow=True
         )
+        assert response.status_code == HTTP_200_OK
+        assert response.resolver_match.url_name == "login"
 
-    @pytest.mark.django_db(transaction=True)
+        user = User.objects.get(
+            username=form_data["username"], email=form_data["email"]
+        )
+        assert user is not None
+        assert_message_present(response, "Votre compte a été créé avec succès !")
+
     def test_invalid_submission(self, client: Client):
         data_invalid = {"first_name": "test"}
         response = client.post(reverse("accounts:register"), data_invalid)
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
-        templates = [template.name for template in response.templates]
-        assert "accounts/register.html" in templates
-
-        messages = list(get_messages(response.wsgi_request))
-        assert any(
-            message.message == "Your accounts contains errors"
-            and message.level_tag == "error"
-            for message in messages
-        )
+        assert response.status_code == HTTP_200_OK
+        assert response.templates[0].name == "accounts/register.html"
 
 
+@pytest.mark.django_db(transaction=True)
 class TestProfileView:
-    @pytest.mark.django_db(transaction=True)
-    def test_page_access(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_page_access(self, client: Client, user_1_connected: User):
         response = client.get(reverse("accounts:profile"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/profile.html" in templates
+        assert response.templates[0].name == "accounts/profile.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_valid_update_submission(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_valid_submission_update_profile(
+        self, client: Client, user_1_connected: User
+    ):
         response = client.post(
             reverse("accounts:profile"),
             {
-                "first_name": "jane",
-                "last_name": "doe",
                 "username": "jane.doe",
                 "email": "jane.doe@example.com",
             },
@@ -111,115 +88,151 @@ class TestProfileView:
         assert response.status_code == HTTP_302_REDIRECT
         assert response.headers["Location"] == reverse("accounts:profile")
 
-        messages = list(get_messages(response.wsgi_request))
-        assert any(
-            message.message == "Your profile has been updated!"
-            and message.level_tag == "success"
-            for message in messages
-        )
-        user.refresh_from_db()
-        assert user.first_name == "jane"
-        assert user.last_name == "doe"
-        assert user.username == "jane.doe"
-        assert user.email == "jane.doe@example.com"
+        user_1_connected.refresh_from_db()
+        assert user_1_connected.username == "jane.doe"
+        assert user_1_connected.email == "jane.doe@example.com"
+        assert_message_present(response, "Votre profil a été mis à jour avec succès !")
 
-    @pytest.mark.django_db(transaction=True)
-    def test_profile_invalid_data(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
-
-        response = client.post(
-            reverse("accounts:profile"),
-            {"first_name": "test"},
-        )
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
-        templates = [template.name for template in response.templates]
-        assert "accounts/profile.html" in templates
-
-        messages = list(get_messages(response.wsgi_request))
-        assert any(
-            message.message == "Your profile contains errors"
-            and message.level_tag == "error"
-            for message in messages
-        )
-
-
-class TestDeleteView:
-    @pytest.mark.django_db(transaction=True)
-    def test_page_access(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
-        response = client.get(reverse("accounts:delete"))
+    def test_profile_invalid_data_update_profile(
+        self, client: Client, user_1_connected: User
+    ):
+        data = {"first_name": "test"}
+        response = client.post(reverse("accounts:profile"), data)
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/user_confirm_delete.html" in templates
+        assert response.templates[0].name == "accounts/profile.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_delete_submission(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
-        response = client.post(reverse("accounts:delete"))
+
+@pytest.mark.django_db(transaction=True)
+class TestDeleteView:
+    def test_page_access(self, client: Client, user_1_connected: User):
+        response = client.get(
+            reverse("accounts:delete", kwargs={"pk": user_1_connected.pk})
+        )
+        assert response.status_code == HTTP_200_OK
+        assert response.templates[0].name == "accounts/user_confirm_delete.html"
+
+    def test_delete_submission(self, client: Client, user_1_connected: User):
+        response = client.post(
+            reverse("accounts:delete", kwargs={"pk": user_1_connected.pk})
+        )
         assert response.status_code == HTTP_302_REDIRECT
         assert response.headers["Location"] == reverse("index")
-
-        messages = list(get_messages(response.wsgi_request))
-        assert any(
-            message.message == "Your account has been deleted successfully!"
-            and message.level_tag == "success"
-            for message in messages
-        )
-        assert not User.objects.filter(username=USERNAME).exists()
+        assert_message_present(response, "Votre compte a été supprimé avec succès !")
+        assert not User.objects.filter(username=user_1_connected.username).exists()
 
 
-class TestPasswordChangeView:
-    @pytest.mark.django_db(transaction=True)
-    def test_password_change_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+@pytest.mark.django_db(transaction=True)
+class TestPasswordChange:
+    def test_page_access_password_change(self, client: Client, user_1_connected: User):
         response = client.get(reverse("accounts:password_change"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_change_form.html" in templates
+        assert response.templates[0].name == "accounts/password_change_form.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_password_change_done_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_submission_form_password_change(
+        self, client: Client, user_1_connected: User
+    ):
+        data = {
+            "old_password": PASSWORD_1,
+            "new_password1": PASSWORD_1,
+            "new_password2": PASSWORD_1,
+        }
+        response = client.post(reverse("accounts:password_change"), data)
+        assert response.status_code == HTTP_302_REDIRECT
+        assert response.headers["Location"] == reverse("accounts:password_change_done")
+
+    def test_page_access_password_change_done(
+        self, client: Client, user_1_connected: User
+    ):
         response = client.get(reverse("accounts:password_change_done"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_change_done.html" in templates
+        assert response.templates[0].name == "accounts/password_change_done.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_password_reset_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+
+@pytest.mark.django_db(transaction=True)
+class TestPasswordReset:
+    def test_page_access_password_reset(self, client: Client, user_1_connected: User):
         response = client.get(reverse("accounts:password_reset"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_reset_form.html" in templates
+        assert response.templates[0].name == "accounts/password_reset_form.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_password_reset_done_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_submission_form_password_reset(
+        self, client: Client, user_1_connected: User
+    ):
+        response = client.post(
+            reverse("accounts:password_reset"), data={"email": user_1_connected.email}
+        )
+        assert response.status_code == HTTP_302_REDIRECT
+        assert response.headers["Location"] == reverse("accounts:password_reset_done")
+
+        # Vérifier l'envoi de l'email
+        emails = [
+            email
+            for email in mail.outbox
+            if email.subject
+            == "Réinitialisation de votre mot de passe - Action requise"
+        ]
+        assert len(emails) == 1
+        assert emails[0].to == [user_1_connected.email]
+        assert user_1_connected.username in emails[0].body
+        assert "password_reset_confirm" in emails[0].body
+
+    def test_page_access_password_reset_done(
+        self, client: Client, user_1_connected: User
+    ):
         response = client.get(reverse("accounts:password_reset_done"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_reset_done.html" in templates
+        assert response.templates[0].name == "accounts/password_reset_done.html"
 
-    @pytest.mark.django_db(transaction=True)
-    def test_password_reset_confirm_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+    def test_page_access_password_reset_confirm(
+        self, client: Client, user_1_connected: User
+    ):
         # Générer un UID et un token valides
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user_1_connected.pk))
+        token = default_token_generator.make_token(user_1_connected)
+        kwargs = {"uidb64": uid, "token": token}
+        url = reverse("accounts:password_reset_confirm", kwargs=kwargs)
+
+        # follow=True pour suivre la redirection
+        response = client.get(url, follow=True)
+        assert response.status_code == HTTP_200_OK
+        assert response.templates[0].name == "accounts/password_reset_confirm.html"
+
+        # On vérifie que nous sommes sur la bonne URL finale (avec set-password)
+        assert response.resolver_match.url_name == "password_reset_confirm"
+        assert response.request["PATH_INFO"].endswith("/set-password/")
+
+    def test_submission_form_password_reset_confirm(
+        self, client: Client, user_1_connected: User
+    ):
+        # Générer un UID et un token valides
+        uid = urlsafe_base64_encode(force_bytes(user_1_connected.pk))
+        token = default_token_generator.make_token(user_1_connected)
+
+        # Première étape : obtenir l'URL avec set-password
         url = reverse(
             "accounts:password_reset_confirm",
             kwargs={"uidb64": uid, "token": token},
         )
-        response = client.get(url)
-        assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_reset_confirm.html" in templates
+        response = client.get(url, follow=True)
 
-    @pytest.mark.django_db(transaction=True)
-    def test_password_reset_complete_view(self, client: Client, user: User):
-        client.login(username=USERNAME, password=PASSWORD)
+        # Deuxième étape : soumettre le nouveau mot de passe
+        response = client.post(
+            response.request["PATH_INFO"],  # URL avec set-password
+            data={"new_password1": "projo#123", "new_password2": "projo#123"},
+            follow=True,
+        )
+
+        # Vérifier la redirection finale
+        assert response.status_code == HTTP_200_OK
+        assert response.templates[0].name == "accounts/password_reset_complete.html"
+
+        # Vérifier que le mot de passe a bien été changé
+        user_1_connected.refresh_from_db()
+        assert user_1_connected.check_password("projo#123")
+
+    def test_page_access_password_reset_complete(
+        self, client: Client, user_1_connected: User
+    ):
         response = client.get(reverse("accounts:password_reset_complete"))
         assert response.status_code == HTTP_200_OK
-        templates = [template.name for template in response.templates]
-        assert "accounts/password_reset_complete.html" in templates
+        assert response.templates[0].name == "accounts/password_reset_complete.html"

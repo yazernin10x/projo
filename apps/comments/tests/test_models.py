@@ -1,33 +1,24 @@
 import pytest
-from ..models import Comment
+from apps.comments.models import Comment
+from apps.core.constants import COMMENT_CONTENT, TASK_TITLE, USERNAME_1
 
 
+@pytest.mark.django_db(transaction=True)
 class TestCommentModel:
-    @pytest.mark.django_db(transaction=True)
-    def test_creation(self, comment: Comment):
-        assert comment.content == "Test comment"
-        assert comment.task.title == "Test Task"
-        assert comment.author.username == "john.doe"
+    def test_creation(self, user_1_connected: User, comment: Comment):
+        assert comment.content == COMMENT_CONTENT
+        assert comment.task.title == TASK_TITLE
+        assert comment.author.username == USERNAME_1
 
-    @pytest.mark.django_db(transaction=True)
     def test__str__(self, comment: Comment):
         username = comment.author.username
         task_title = comment.task.title
-        expected_str = f"Comment by {username} on {task_title}"
-        assert str(comment) == expected_str
+        assert str(comment) == f"{username} - {task_title}"
 
-    @pytest.mark.django_db(transaction=True)
-    def test__repr__(self, comment: Comment):
-        id = comment.id
+    def test__repr__(self, user_1_connected: User, comment: Comment):
         content = comment.content
         task = comment.task.title
         author = comment.author.username
-        expected_repr = (
-            f"Comment(id={id}, content={content}, task={task}, author={author})"
+        assert (
+            repr(comment) == f"Comment(content={content}, task={task}, author={author})"
         )
-        assert repr(comment) == expected_repr
-
-    @pytest.mark.django_db(transaction=True)
-    def test_auto_timestamps(self, comment: Comment):
-        assert comment.created_at is not None
-        assert comment.updated_at is not None

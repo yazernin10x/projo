@@ -4,11 +4,16 @@ from apps.accounts.models import User
 
 
 class Task(models.Model):
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "Task"
+        verbose_name_plural = "Tasks"
+
     class Status(models.TextChoices):
-        NONE = "none", "Choisir..."
         TODO = "todo", "À faire"
         IN_PROGRESS = "in_progress", "En cours"
         DONE = "done", "Terminée"
+        CANCELLED = "cancelled", "Annulée"
 
     title: models.CharField = models.CharField(
         max_length=255, unique=True, null=False, blank=False
@@ -33,15 +38,7 @@ class Task(models.Model):
     )
 
     def __str__(self):
-        return (
-            f"Task: {self.title} "
-            f"(Status: {self.status}, Project: {self.project.title})"
-        )
+        return f"{self.title} ({self.status})"
 
     def __repr__(self):
-        return (
-            f"<Task id={self.id}, "
-            f"title={self.title!r}, "
-            f"status={self.status!r}, "
-            f"project_id={self.project_id}>"
-        )
+        return f"Task(id={self.id}, title={self.title!r})"

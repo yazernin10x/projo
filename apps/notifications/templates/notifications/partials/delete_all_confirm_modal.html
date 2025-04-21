@@ -1,0 +1,44 @@
+<dialog id="delete_all_notifications_modal_xx" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box max-w-lg w-full mx-2 sm:mx-4 bg-base-200">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <div class="text-center space-y-2 sm:space-y-4 mb-2 sm:mb-4">
+            <i class="fa-solid fa-triangle-exclamation text-2xl sm:text-3xl md:text-4xl text-error animate-pulse"></i>
+            <h2 class="text-base sm:text-lg md:text-xl font-bold">Confirmer la suppression</h2>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl sm:shadow-2xl">
+            <div class="card-body p-2 sm:p-3 md:p-4">
+                <div class="alert alert-error shadow-lg my-1 sm:my-2 md:my-4 text-white">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>
+                        <h3 class="font-bold text-xs sm:text-sm md:text-base">Attention !</h3>
+                        <p class="text-xs sm:text-sm">
+                            Êtes-vous sûr de vouloir supprimer toutes les notifications ? Cette action est irréversible.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2 md:gap-3 mt-2 sm:mt-3 md:mt-4">
+                    <button onclick="closeModal('xx', 'notifications', 'delete_all')" class="btn btn-success text-white btn-sm w-full sm:w-auto">
+                        <i class="fa-solid fa-xmark mr-1 sm:mr-2 text-xs sm:text-sm"></i>
+                        <span class="text-xs sm:text-sm">Annuler</span>
+                    </button>
+                    
+                    <form action="{% url 'notifications:delete_all' %}" method="POST" class="w-full sm:w-auto">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-error hover:bg-red-600 transition-colors text-white btn-sm w-full sm:w-auto">
+                            <i class="fas fa-trash-alt mr-1 sm:mr-2 text-xs sm:text-sm"></i>
+                            <span class="text-xs sm:text-sm">Confirmer</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>

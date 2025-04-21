@@ -1,68 +1,73 @@
 import pytest
-from apps.tasks.models import Task
 from apps.accounts.models import User
 from apps.projects.models import Project, ProjectMember
-from django.utils import timezone
-from datetime import timedelta
-
-PROJECT_TITLE = "Test Project"
-PROJECT_DESCRIPTION = "A project description"
-PROJECT_DEADLINE = timezone.now() + timedelta(days=7)
-
-PROJECT_MEMBER_ROLE = "admin"
-
-USER_FIRST_NAME = "John"
-USER_LAST_NAME = "Doe"
-USERNAME = "john.doe"
-USER_EMAIL = "john.doe@example.com"
-USER_PASSWORD = "zootoR587"
-
-
-@pytest.fixture(scope="function")
-def user(db):
-    return User.objects.create_user(
-        first_name=USER_FIRST_NAME,
-        last_name=USER_LAST_NAME,
-        username=USERNAME,
-        email=USER_EMAIL,
-        password=USER_PASSWORD,
-    )
+from apps.core.constants import (
+    PROJECT_TITLE,
+    PROJECT_DESCRIPTION,
+    PROJECT_DEADLINE,
+    PROJECT_MEMBER_ROLE,
+)
+from apps.core.tests.fixtures import (
+    user_1,
+    user_1_connected,
+    user_2,
+    user_2_connected,
+    project,
+    superuser,
+    moderator,
+    project_with_moderator,
+    unauthorized_user,
+)
 
 
-@pytest.fixture(scope="function")
-def project_form_data(user: User):
+@pytest.fixture
+def users(user_1: User, user_2: User, superuser: User):
+    """Fixture pour créer les utilisateurs de test"""
     return {
-        "title": PROJECT_TITLE,
-        "description": PROJECT_DESCRIPTION,
-        "deadline": PROJECT_DEADLINE,
-        "author": user,
+        "user_1": user_1,
+        "user_2": user_2,
+        "user_3": User.objects.create_user(
+            username="user_3", email="user_3@test.com", password="password"
+        ),
+        "superuser": superuser,
+    }
+
+
+@pytest.fixture
+def formset_data(project: Project):
+    """Fixture pour les données de base du formset"""
+    return {
+        "project-members-TOTAL_FORMS": "1",
+        "project-members-INITIAL_FORMS": "0",
+        "project-members-0-id": "",
+        "project-members-0-DELETE": "",
+        "project-members-0-project": project.pk,
     }
 
 
 @pytest.fixture(scope="function")
-def project(db, user: User):
-    proj = Project.objects.create(
-        title=PROJECT_TITLE,
-        description=PROJECT_DESCRIPTION,
-        deadline=PROJECT_DEADLINE,
-        author=user,
-    )
-    return proj
+def project_form_data(user_1: User):
+    return {
+        "title": PROJECT_TITLE,
+        "description": PROJECT_DESCRIPTION,
+        "deadline": PROJECT_DEADLINE,
+        "author": user_1,
+    }
 
 
 @pytest.fixture(scope="function")
-def project_member_form_data(user: User, project: Project):
+def project_member_form_data(user_1: User, project: Project):
     return {
-        "user": user,
+        "user": user_1,
         "project": project,
         "role": PROJECT_MEMBER_ROLE,
     }
 
 
 @pytest.fixture
-def project_member(user, project):
+def project_member(user_1: User, project: Project):
     return ProjectMember.objects.create(
-        user=user,
+        user=user_1,
         project=project,
         role=PROJECT_MEMBER_ROLE,
     )

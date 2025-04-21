@@ -1,47 +1,26 @@
-from django.db.models import (
-    Model,
-    DateTimeField,
-    BooleanField,
-    ManyToManyField,
-    ForeignKey,
-    CASCADE,
-    CharField,
-)
+from django.db import models
 from apps.accounts.models import User
 
 
-class Notification(Model):
-    sender: ForeignKey = ForeignKey(
+class Notification(models.Model):
+    title: models.CharField = models.CharField(max_length=50, blank=False, null=False)
+    content: models.CharField = models.CharField(
+        max_length=200, blank=False, null=False
+    )
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    is_read: models.BooleanField = models.BooleanField(default=False)
+    sender: models.ForeignKey = models.ForeignKey(
         User,
-        on_delete=CASCADE,
-        related_name="sent_notifications",
+        on_delete=models.CASCADE,
+        related_name="send_notifications",
         verbose_name="Sender",
     )
-
-    recipients: ManyToManyField = ManyToManyField(
+    recipients: models.ManyToManyField = models.ManyToManyField(
         User, related_name="received_notifications", verbose_name="Recipients"
     )
 
-    content: CharField = CharField(max_length=200)
-    created_at: DateTimeField = DateTimeField(auto_now_add=True)
-    is_read: BooleanField = BooleanField(default=False)
-
     def __str__(self):
-        read_status = "read" if self.is_read else "unread"
-        return (
-            f"{self.content} "
-            f"({read_status}, "
-            f"{self.created_at.strftime('%Y-%m-%d %H:%M')})"
-        )
+        return f"{self.title}"
 
     def __repr__(self):
-        return (
-            f"<Notification("
-            f"id={self.id}, "
-            f"content='{self.content}', "
-            f"is_read={self.is_read}, "
-            f"created_at='{self.created_at}', "
-            f"recipients={self.recipients.all()}, "
-            f"sender={self.sender}"
-            f")>"
-        )
+        return f"Notification(pk={self.pk}, title='{self.title}')"
