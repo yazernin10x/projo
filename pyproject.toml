@@ -47,6 +47,14 @@ filterwarnings = [
     "ignore::RuntimeWarning:django.db.models.fields",
 ]
 
+[tool.pytest.ini_options]
+addopts = "-v --tb=short --strict-markers --disable-warnings"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests"
+]
+
 # [tool.npm.scripts]
 # build = "tailwindcss -i theme/static_src/src/styles.css -o static/css/dist/styles.css --minify"
 # dev = "tailwindcss -i theme/static_src/src/styles.css -o static/css/dist/styles.css --watch"
